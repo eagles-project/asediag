@@ -63,6 +63,7 @@ def main():
     resource_path = 'adiags'
     try:
         tmp = pkg_resources.resource_filename(resource_package, resource_path)
+        print(tmp)
         shutil.copytree(tmp, path)
     finally:
         pkg_resources.cleanup_resources()
