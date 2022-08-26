@@ -415,16 +415,16 @@ def forcing_plots(plot_vars,path,area,season,plane,lon1,lon2,lat1,lat2,scrip):
     labels=['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)',\
            '(k)','(l)','(m)','(n)','(o)']
     plt.figure(figsize=(18,22))
-    rr = [-10.,-5.,-2.,-1.,-0.5,0.5,1.,2.,5.,10.]
+    rr = [-20,-10,-5,-2,-1,-0.5,0.5,1,2,5,10,20]
     i=1
     for var,t,l in zip(plot_vars,titles,labels):
         ax=plt.subplot(5,3,0+i,projection=crs.PlateCarree())
         m=(var*area).sum(['ncol'])/(area).sum(['ncol'])
         Plot_2D( var,ax=ax,cmap=cmaps.BlueWhiteOrangeRed,ranges=rr,\
              scrip_file=scrip,lon_range=[lon1,lon2], lat_range=[lat1,lat2],title=t,title_size=15,
-                unit_offset=[-0.6,-2.2],pad=0.15,shrink=0.9,unit='[W m$^{-2}$]',unit_size=10,\
-             grid_line=True, grid_line_lw=0.1).plot(rr)
-        ax.text(0.85,1.03, '{:0.2e}'.format(m.values),size=12,transform=ax.transAxes)
+                unit_offset=[-0.6,-2.2],pad=0.15,shrink=1,resolution="50m",unit='[W m$^{-2}$]',unit_size=10,\
+             extend='neither', country=False,label_size=12).plot(rr)
+        ax.text(0.89,1.03, '{:0.3f}'.format(m.values),size=12,transform=ax.transAxes)
         ax.text(0.05,0.95,l,size=12,transform=ax.transAxes,va='top',bbox={'facecolor':'white','pad':1,'edgecolor':'none'})
         i+=1
     plt.savefig(str(path)+'/'+plane+'_forcing_'+season+'_latlon.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
@@ -468,10 +468,9 @@ def get_forcings(datadef,datase,lon,lat,area,path,season,scrip,reg=None,loc=None
     if reg=='Global':
         plot_vars=[TTAEF,SWAEF,LWAEF,TTIND, SWIND,LWIND,TTDIR,SWDIR,LWDIR,\
                   TTCDIR,SWCDIR,LWCDIR,TTALB,SWALB,LWALB]
-        names=['TTAEF', 'SWAEF', 'LWAEF', 'TTIND', ' SWIND', 'LWIND', 'TTDIR', \
-               'SWDIR', 'LWDIR', 'TTCDIR', 'SWCDIR', 'LWCDIR', 'TTALB', 'SWALB', 'LWALB']
+        names=['TTAEF', 'SWAEF', 'LWAEF', 'TTIND', ' SWIND', 'LWIND', 'TTDIR', 'SWDIR', 'LWDIR', 'TTCDIR', 'SWCDIR', 'LWCDIR', 'TTALB', 'SWALB', 'LWALB']
         for n,v in zip(names,plot_vars):
-            v.name = n
+            v.name = n.strip()
         saving_data = xr.merge(plot_vars)
         saving_data.load().to_netcdf(path+'/TOA_forcing_vars_global.nc')
         forcing_plots(plot_vars,path,area,season,'TOA',lon1,lon2,lat1,lat2,scrip)
@@ -514,6 +513,9 @@ def get_forcings(datadef,datase,lon,lat,area,path,season,scrip,reg=None,loc=None
     if reg=='Global':
         plot_vars=[TTAEF,SWAEF,LWAEF,TTIND, SWIND,LWIND,TTDIR,SWDIR,LWDIR,\
                   TTCDIR,SWCDIR,LWCDIR,TTALB,SWALB,LWALB]
+        names=['TTAEF', 'SWAEF', 'LWAEF', 'TTIND', ' SWIND', 'LWIND', 'TTDIR', 'SWDIR', 'LWDIR', 'TTCDIR', 'SWCDIR', 'LWCDIR', 'TTALB', 'SWALB', 'LWALB']
+        for n,v in zip(names,plot_vars):
+            v.name = n.strip()
         saving_data = xr.merge(plot_vars)
         saving_data.load().to_netcdf(path+'/SFC_forcing_vars_global.nc')
         forcing_plots(plot_vars,path,area,season,'SFC',lon1,lon2,lat1,lat2,scrip)
