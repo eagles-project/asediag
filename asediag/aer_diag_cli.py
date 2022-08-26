@@ -73,7 +73,6 @@ def main():
     start = time.perf_counter()
     # if __name__ == '__main__':
     if hp == None:
-        print('\nPlotting is muted\n')
         for aer in aer_list[:]:
             print('getting data\n')
             print(path1,path2)
@@ -93,11 +92,13 @@ def main():
             for ind,var in product([0,1,2],aa[2]):
                 p = mp.Process(target=get_map,args=[aa[0][var],bb[0][var],diff[var],rel[var],var,ind,case1,case2,\
                                         aa[1][var],bb[1][var],aa[3],aa[4],lon.values,lat.values],\
-                                       kwargs={'path':path+'/set02','reg':region})
+                                       kwargs={'scrip':sc,'path':path+'/set02','reg':region})
                 p.start()
                 processes.append(p)
             for process in processes:
                 process.join()
+    else:
+        print('\nPlotting is muted\n')
     if vl != None:
         print('\nPlotting all the extra variables\n')
         aa=gather_data(path1,vlist,path1.strip().split('/')[-3],sv='y')
@@ -116,7 +117,7 @@ def main():
             for var,unit in zip(vlist,vunits):
                 p = mp.Process(target=get_map,args=[aa[0][var],bb[0][var],diff[var],rel[var],var,ind,case1,case2,\
                                 aa[1][var],bb[1][var],aa[3],unit,lon.values,lat.values],\
-                               kwargs={'path':path+'/set02','reg':region})
+                               kwargs={'scrip':sc,'path':path+'/set02','reg':region})
                 p.start()
                 processes.append(p)
             for process in processes:

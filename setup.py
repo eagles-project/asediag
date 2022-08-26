@@ -30,7 +30,7 @@ test_requirements = [
 
 setup(
     name='asediag',
-    version='1.1.0',
+    version='2.0.0',
     description="Aerosol SE-data diagnostics tool",
     long_description=readme,
     author="Taufiq Hassan",

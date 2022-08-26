@@ -415,16 +415,16 @@ def forcing_plots(plot_vars,path,area,season,plane,lon1,lon2,lat1,lat2,scrip):
     labels=['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)',\
            '(k)','(l)','(m)','(n)','(o)']
     plt.figure(figsize=(18,22))
-    rr = [-20,-10,-5,-2,-1,-.5,.5,1,2,5,10,20]
+    rr = [-10.,-5.,-2.,-1.,-0.5,0.5,1.,2.,5.,10.]
     i=1
     for var,t,l in zip(plot_vars,titles,labels):
         ax=plt.subplot(5,3,0+i,projection=crs.PlateCarree())
         m=(var*area).sum(['ncol'])/(area).sum(['ncol'])
         Plot_2D( var,ax=ax,cmap=cmaps.BlueWhiteOrangeRed,ranges=rr,\
              scrip_file=scrip,lon_range=[lon1,lon2], lat_range=[lat1,lat2],title=t,title_size=15,
-                unit_offset=[-0.6,-2.2],pad=0.15,shrink=1,unit='[W m$^{-2}$]',unit_size=10,\
-             country=False,extend='neither',resolution='50m',label_size=12).plot(rr)
-        ax.text(0.89,1.03, '{:0.3f}'.format(m.values),size=12,transform=ax.transAxes)
+                unit_offset=[-0.6,-2.2],pad=0.15,shrink=0.9,unit='[W m$^{-2}$]',unit_size=10,\
+             grid_line=True, grid_line_lw=0.1).plot(rr)
+        ax.text(0.85,1.03, '{:0.2e}'.format(m.values),size=12,transform=ax.transAxes)
         ax.text(0.05,0.95,l,size=12,transform=ax.transAxes,va='top',bbox={'facecolor':'white','pad':1,'edgecolor':'none'})
         i+=1
     plt.savefig(str(path)+'/'+plane+'_forcing_'+season+'_latlon.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
@@ -471,9 +471,9 @@ def get_forcings(datadef,datase,lon,lat,area,path,season,scrip,reg=None,loc=None
         names=['TTAEF', 'SWAEF', 'LWAEF', 'TTIND', ' SWIND', 'LWIND', 'TTDIR', \
                'SWDIR', 'LWDIR', 'TTCDIR', 'SWCDIR', 'LWCDIR', 'TTALB', 'SWALB', 'LWALB']
         for n,v in zip(names,plot_vars):
-            v.name = str(n.strip())
+            v.name = n
         saving_data = xr.merge(plot_vars)
-        saving_data.load().to_netcdf(path+'/'+'TOA_forcing_vars_global.nc')
+        saving_data.load().to_netcdf(path+'/TOA_forcing_vars_global.nc')
         forcing_plots(plot_vars,path,area,season,'TOA',lon1,lon2,lat1,lat2,scrip)
 
     all_vars=[TTAEF,SWAEF,LWAEF,SWCAEF,LWCAEF,SWIND,LWIND,TTIND,SWDIR,LWDIR,TTDIR,\
@@ -514,12 +514,8 @@ def get_forcings(datadef,datase,lon,lat,area,path,season,scrip,reg=None,loc=None
     if reg=='Global':
         plot_vars=[TTAEF,SWAEF,LWAEF,TTIND, SWIND,LWIND,TTDIR,SWDIR,LWDIR,\
                   TTCDIR,SWCDIR,LWCDIR,TTALB,SWALB,LWALB]
-        names=['TTAEF', 'SWAEF', 'LWAEF', 'TTIND', ' SWIND', 'LWIND', 'TTDIR', \
-               'SWDIR', 'LWDIR', 'TTCDIR', 'SWCDIR', 'LWCDIR', 'TTALB', 'SWALB', 'LWALB']
-        for n,v in zip(names,plot_vars):
-            v.name = str(n.strip())
         saving_data = xr.merge(plot_vars)
-        saving_data.load().to_netcdf(path+'/'+'SFC_forcing_vars_global.nc')
+        saving_data.load().to_netcdf(path+'/SFC_forcing_vars_global.nc')
         forcing_plots(plot_vars,path,area,season,'SFC',lon1,lon2,lat1,lat2,scrip)
     
     all_vars=[TTAEF,SWAEF,LWAEF,SWCAEF,LWCAEF,SWIND,LWIND,TTIND,SWDIR,LWDIR,TTDIR,\
@@ -556,15 +552,14 @@ def get_forcing_df(path1,path2,case1,case2,path,season='ANN',mod='eam',\
     for reg in regions:
         df[reg] = get_forcings(datadef,datase,lon,lat,area,path,season,scrip,reg=reg)
     df.index=var_names
-    df.to_csv(path+'/'+'AllForcings_'+season+'.csv',index=False)
+    df.to_csv(path+'/AllForcings_'+season+'.csv',index=False)
     pd.options.display.float_format = '{:g}'.format
     df = df.applymap(lambda x: rounding(x) if ((abs(x)>1e-5) and (abs(x)<1e5)) else '{:.0e}'.format(x))
     htable = build_table(df,'grey_light',index=True,padding='5px',text_align='right')
     with open(path+'/'+'AllForcings_'+season+'.html','w') as f:
         f.write(htable)
 
-def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,lat,reg=None,path=None):
-    from Plot_2D import Plot_2D
+def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,lat,scrip=None,reg=None,path=None):
     if reg!=None:
         lat1,lat2,lon1,lon2=get_latlon(reg)
     else:
@@ -580,7 +575,7 @@ def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,l
     var2 = dd2.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2)).dropna(dim='ncol')
     rr=get_crange(var1,var2)
     Plot_2D( dd1,ax=ax,cmap=cmaps.amwg256,ranges=rr,\
-                 scrip_file='/compyfs/www/hass877/share/emis_data/DECK120_to_SE/northamericax4v1pg2_scrip.nc',\
+                 scrip_file=scrip,\
                     lon_range=[lon1,lon2], lat_range=[lat1,lat2],
                     unit_offset=[-0.6,-2.2],pad=0.07,shrink=1,unit=unit,unit_size=12,\
                  grid_line=True, grid_line_lw=0.1).plot(rr)
@@ -588,7 +583,7 @@ def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,l
     ax.text(0.83,1.03, 'mean: '+'{:0.2e}'.format((mean1.isel(season=ind).values)),size=15,transform=ax.transAxes)
     ax=plt.subplot(222,projection=crs.PlateCarree())
     Plot_2D( dd2,ax=ax,cmap=cmaps.amwg256,ranges=rr,\
-                 scrip_file='/compyfs/www/hass877/share/emis_data/DECK120_to_SE/northamericax4v1pg2_scrip.nc',\
+                 scrip_file=scrip,\
                     lon_range=[lon1,lon2], lat_range=[lat1,lat2],
                     unit_offset=[-0.6,-2.2],pad=0.07,shrink=1,unit=unit,unit_size=12,\
                  grid_line=True, grid_line_lw=0.1).plot(rr)
@@ -599,7 +594,7 @@ def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,l
     rr_diff=get_crange2(eevar)
     ax=plt.subplot(223,projection=crs.PlateCarree())
     Plot_2D( ee,ax=ax,cmap=cmaps.BlueWhiteOrangeRed,ranges=rr_diff,unit=unit,unit_size=12,\
-                  scrip_file='/compyfs/www/hass877/share/emis_data/DECK120_to_SE/northamericax4v1pg2_scrip.nc',\
+                  scrip_file=scrip,\
                     lon_range=[lon1,lon2], lat_range=[lat1,lat2],
                     unit_offset=[-0.6,-2.2],pad=0.07,shrink=1,\
                   grid_line=True, grid_line_lw=0.1).plot(rr_diff)
@@ -607,9 +602,10 @@ def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,l
     ax.text(0.83,1.03, 'mean: '+'{:0.2e}'.format((mean2.isel(season=ind).values-mean1.isel(season=ind).values)),size=15,transform=ax.transAxes)
     ff=rel.isel(season=ind)
     rr_rel=[-100,-50,-20,-10,-5,-2,2,5,10,20,50,100]
+    rr_rel=[-100,-90,-80,-70,-60,-50,-20,-10,-5,-2,2,5,10,20,50,60,70,80,90,100]
     ax=plt.subplot(224,projection=crs.PlateCarree())
     Plot_2D( ff,ax=ax,cmap=cmaps.BlueWhiteOrangeRed,ranges=rr_rel,unit='[%]',unit_size=12,\
-                  scrip_file='/compyfs/www/hass877/share/emis_data/DECK120_to_SE/northamericax4v1pg2_scrip.nc',\
+                  scrip_file=scrip,\
                     lon_range=[lon1,lon2], lat_range=[lat1,lat2],
                     unit_offset=[-0.6,-2.2],pad=0.07,shrink=1,\
                   grid_line=True, grid_line_lw=0.1).plot(rr_rel)
