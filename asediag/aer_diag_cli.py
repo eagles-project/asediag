@@ -64,6 +64,8 @@ def main():
     try:
         tmp = pkg_resources.resource_filename(resource_package, resource_path)
         shutil.copytree(tmp, path)
+    except FileExistsError:
+        pass
     except:
         print('\nCan not create directory:',tmp)
         
@@ -91,7 +93,7 @@ def main():
             for ind,var in product([0,1,2],aa[2]):
                 p = mp.Process(target=get_map,args=[aa[0][var],bb[0][var],diff[var],rel[var],var,ind,case1,case2,\
                                         aa[1][var],bb[1][var],aa[3],aa[4],lon.values,lat.values],\
-                                       kwargs={'path':path,'reg':region})
+                                       kwargs={'path':path+'/set02','reg':region})
                 p.start()
                 processes.append(p)
             for process in processes:
@@ -114,7 +116,7 @@ def main():
             for var,unit in zip(vlist,vunits):
                 p = mp.Process(target=get_map,args=[aa[0][var],bb[0][var],diff[var],rel[var],var,ind,case1,case2,\
                                 aa[1][var],bb[1][var],aa[3],unit,lon.values,lat.values],\
-                               kwargs={'path':path,'reg':region})
+                               kwargs={'path':path+'/set02','reg':region})
                 p.start()
                 processes.append(p)
             for process in processes:
@@ -124,7 +126,7 @@ def main():
         for aer in aer_list[:]:
             processes=[]
             for ind in [0,1,2]:
-                p = mp.Process(target=get_all_tables,args=[ind,aer,path1,path2,case1,case2,path,region,local,model])
+                p = mp.Process(target=get_all_tables,args=[ind,aer,path1,path2,case1,case2,path+'/tables',region,local,model])
                 p.start()
                 processes.append(p)
             for process in processes:
