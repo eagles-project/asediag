@@ -73,12 +73,19 @@ def get_vertint(vdata,ha,p0,hb,ps,grav,fact):
     vdata = vdata.sum('lev')
     return vdata
     
-def get_hplots(path,case,ts,aer,plev=None,mod='eam'):
+def get_hplots(path,case,ts,aer,plev=None,mod='eam',reg=None):
     ## reading data as xarray
     data = xr.open_mfdataset(path+case+'.'+mod+'.'+ts+'.*_climo.nc')
     lon = data['lon']
     lon[lon > 180.] -= 360.
     lat = data['lat']
+    
+    if reg!=None:
+        lat1,lat2,lon1,lon2=get_latlon(reg)
+    else:
+        lat1,lat2,lon1,lon2=lat.values.min(),lat.values.max(),lon.values.min(),lon.values.max()
+  
+    
     if ts=='ANN':
         data = data.rename({'year':'season'})
     pval = 'bdn'
@@ -136,7 +143,10 @@ def get_hplots(path,case,ts,aer,plev=None,mod='eam'):
     ## getting total
     vdata[aer] = vdata.to_array().sum('variable')
     ## actual mean
-    mean = (vdata*area).sum(['ncol'])/(area).sum(['ncol'])
+    vdatalatlon = vdata.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2))
+    arealatlon = area.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2))
+    mean = (vdatalatlon*arealatlon).sum(['ncol'])/(arealatlon).sum(['ncol'])
+
     return vdata,mean,var_vars+[aer],pval,lon,lat
 
 def get_singleV_hplots(path,case,ts,var,fact=1,vertinit=None,pval='radiation',mod='eam'):
@@ -344,7 +354,7 @@ def get_all_tables(ind,aer,path1,path2,case1,case2,path,reg,loc,mod):
         with open(path+'/'+col+'_'+ss[ind]+'.html','w') as f:
             f.write(htable)
 
-def gather_data(path,aer,case,plev=None,sv=None,fact=1,vertinit=None,unit=None):
+def gather_data(path,aer,case,plev=None,sv=None,fact=1,vertinit=None,unit=None,reg=None):
     ss = ['ANN','DJF','JJA']
     dlist = []
     mlist = []
@@ -352,7 +362,7 @@ def gather_data(path,aer,case,plev=None,sv=None,fact=1,vertinit=None,unit=None):
         if sv!=None:
             orig=get_singleV_hplots(path,case,s,aer,fact=1,vertinit=None,pval='radiation')
         else:
-            orig=get_hplots(path,case,s,aer,plev=plev)
+            orig=get_hplots(path,case,s,aer,plev=plev,reg=reg)
         dlist.append(orig[0])
         mlist.append(orig[1])
     data_combined=xr.concat(dlist,"season")

@@ -87,7 +87,7 @@ class get_plot(object):
         var, verts = self.get_verts()
         kwd_polycollection = {}
         kwd_polycollection['edgecolor'] = 'k'
-        kwd_polycollection['lw'] = 0.1
+        kwd_polycollection['lw'] = 1
         ## levels
         ranges=self.rr
         self.ax.set_global()
@@ -118,9 +118,12 @@ class get_plot(object):
         cbar_ticks=list(map(str,ranges))
         fig = self.ax.figure
         positions = self.ax.get_position()
-        cax = fig.add_axes([positions.x1+0.03,positions.y0,0.02,positions.y1-positions.y0])
-        cbar = fig.colorbar(im,cax=cax,orientation='vertical',ticks=ranges,extend='both')
-        cbar.ax.set_yticklabels(cbar_ticks, size=self.labelsize )
+        # cax = fig.add_axes([positions.x1+0.03,positions.y0,0.02,positions.y1-positions.y0])
+        # cbar = fig.colorbar(im,cax=cax,orientation='vertical',ticks=ranges,extend='both')
+        # cbar.ax.set_yticklabels(cbar_ticks, size=self.labelsize )
+        cax = fig.add_axes([positions.x0,positions.y0-0.05,positions.x1-positions.x0,0.02])
+        cbar = fig.colorbar(im,cax=cax,orientation='horizontal',ticks=ranges,extend='both')
+        cbar.ax.set_xticklabels(cbar_ticks, size=self.labelsize )
         cbar.set_label(label='['+self.unit+']',size=self.labelsize)
         ## panel box thickness
         plt.setp(self.ax.spines.values(),lw=1.5)

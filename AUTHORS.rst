@@ -5,4 +5,5 @@
 
 **Contributors**
 
-None yet.
+* Kai Zhang
+* Jianfeng Li
