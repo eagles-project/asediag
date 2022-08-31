@@ -6,12 +6,11 @@ matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import cartopy.crs as crs
 import cmaps
-from asediag.Plot_2D import Plot_2D
+from asediag.aerdiag_plots import get_plots
 import matplotlib
 import fnmatch
 from pathlib import Path
 import pandas as pd
-import math
 from pretty_html_table import build_table
 
 ##########################################################################
@@ -571,60 +570,103 @@ def get_forcing_df(path1,path2,case1,case2,path,season='ANN',mod='eam',\
     with open(path+'/'+'AllForcings_'+season+'.html','w') as f:
         f.write(htable)
 
-def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,lat,scrip=None,reg=None,path=None):
+# def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,lat,scrip=None,reg=None,path=None):
+#     if reg!=None:
+#         lat1,lat2,lon1,lon2=get_latlon(reg)
+#     else:
+#         lat1,lat2,lon1,lon2=lat.min(),lat.max(),lon.min(),lon.max()
+#     if path==None:
+#         path = Path('.').absolute()
+#     ss = ['ANN','DJF','JJA']
+#     plt.figure(figsize=(18,12))
+#     ax=plt.subplot(221,projection=crs.PlateCarree())
+#     dd1=data1.isel(season=ind)
+#     var1 = dd1.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2)).dropna(dim='ncol')
+#     dd2=data2.isel(season=ind)
+#     var2 = dd2.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2)).dropna(dim='ncol')
+#     rr=get_crange(var1,var2)
+#     Plot_2D( dd1,ax=ax,cmap=cmaps.amwg256,ranges=rr,\
+#                  scrip_file=scrip,\
+#                     lon_range=[lon1,lon2], lat_range=[lat1,lat2],
+#                     unit_offset=[-0.6,-2.2],pad=0.07,shrink=1,unit=unit,unit_size=12,\
+#                  grid_line=True, grid_line_lw=0.1).plot(rr)
+#     ax.text(0.005,1.03,case1,size=15,transform=ax.transAxes)
+#     ax.text(0.83,1.03, 'mean: '+'{:0.2e}'.format((mean1.isel(season=ind).values)),size=15,transform=ax.transAxes)
+#     ax=plt.subplot(222,projection=crs.PlateCarree())
+#     Plot_2D( dd2,ax=ax,cmap=cmaps.amwg256,ranges=rr,\
+#                  scrip_file=scrip,\
+#                     lon_range=[lon1,lon2], lat_range=[lat1,lat2],
+#                     unit_offset=[-0.6,-2.2],pad=0.07,shrink=1,unit=unit,unit_size=12,\
+#                  grid_line=True, grid_line_lw=0.1).plot(rr)
+#     ax.text(0.005,1.03,case2,size=15,transform=ax.transAxes)
+#     ax.text(0.83,1.03, 'mean: '+'{:0.2e}'.format((mean2.isel(season=ind).values)),size=15,transform=ax.transAxes)
+#     ee=diff.isel(season=ind)
+#     eevar = ee.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2)).dropna(dim='ncol')
+#     rr_diff=get_crange2(eevar)
+#     ax=plt.subplot(223,projection=crs.PlateCarree())
+#     Plot_2D( ee,ax=ax,cmap=cmaps.BlueWhiteOrangeRed,ranges=rr_diff,unit=unit,unit_size=12,\
+#                   scrip_file=scrip,\
+#                     lon_range=[lon1,lon2], lat_range=[lat1,lat2],
+#                     unit_offset=[-0.6,-2.2],pad=0.07,shrink=1,\
+#                   grid_line=True, grid_line_lw=0.1).plot(rr_diff)
+#     ax.text(0.005,1.03,case2+' $-$ '+case1,size=15,transform=ax.transAxes)
+#     ax.text(0.83,1.03, 'mean: '+'{:0.2e}'.format((mean2.isel(season=ind).values-mean1.isel(season=ind).values)),size=15,transform=ax.transAxes)
+#     ff=rel.isel(season=ind)
+#     rr_rel=[-100,-50,-20,-10,-5,-2,2,5,10,20,50,100]
+#     rr_rel=[-100,-90,-80,-70,-60,-50,-20,-10,-5,-2,2,5,10,20,50,60,70,80,90,100]
+#     ax=plt.subplot(224,projection=crs.PlateCarree())
+#     Plot_2D( ff,ax=ax,cmap=cmaps.BlueWhiteOrangeRed,ranges=rr_rel,unit='[%]',unit_size=12,\
+#                   scrip_file=scrip,\
+#                     lon_range=[lon1,lon2], lat_range=[lat1,lat2],
+#                     unit_offset=[-0.6,-2.2],pad=0.07,shrink=1,\
+#                   grid_line=True, grid_line_lw=0.1).plot(rr_rel)
+#     ax.text(0.005,1.03,'Relative diff (%)',size=15,transform=ax.transAxes)
+#     plt.tight_layout()
+#     plt.savefig(str(path)+'/'+var+'_'+ss[ind]+'_latlon_'+pval+'.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
+
+def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,lat,scrip=None,reg='Global',path=None):
     if reg!=None:
         lat1,lat2,lon1,lon2=get_latlon(reg)
     else:
         lat1,lat2,lon1,lon2=lat.min(),lat.max(),lon.min(),lon.max()
     if path==None:
         path = Path('.').absolute()
-    ss = ['ANN','DJF','JJA']
-    plt.figure(figsize=(18,12))
-    ax=plt.subplot(221,projection=crs.PlateCarree())
+        
     dd1=data1.isel(season=ind)
     var1 = dd1.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2)).dropna(dim='ncol')
     dd2=data2.isel(season=ind)
     var2 = dd2.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2)).dropna(dim='ncol')
     rr=get_crange(var1,var2)
-    Plot_2D( dd1,ax=ax,cmap=cmaps.amwg256,ranges=rr,\
-                 scrip_file=scrip,\
-                    lon_range=[lon1,lon2], lat_range=[lat1,lat2],
-                    unit_offset=[-0.6,-2.2],pad=0.07,shrink=1,unit=unit,unit_size=12,\
-                 grid_line=True, grid_line_lw=0.1).plot(rr)
-    ax.text(0.005,1.03,case1,size=15,transform=ax.transAxes)
-    ax.text(0.83,1.03, 'mean: '+'{:0.2e}'.format((mean1.isel(season=ind).values)),size=15,transform=ax.transAxes)
-    ax=plt.subplot(222,projection=crs.PlateCarree())
-    Plot_2D( dd2,ax=ax,cmap=cmaps.amwg256,ranges=rr,\
-                 scrip_file=scrip,\
-                    lon_range=[lon1,lon2], lat_range=[lat1,lat2],
-                    unit_offset=[-0.6,-2.2],pad=0.07,shrink=1,unit=unit,unit_size=12,\
-                 grid_line=True, grid_line_lw=0.1).plot(rr)
-    ax.text(0.005,1.03,case2,size=15,transform=ax.transAxes)
-    ax.text(0.83,1.03, 'mean: '+'{:0.2e}'.format((mean2.isel(season=ind).values)),size=15,transform=ax.transAxes)
     ee=diff.isel(season=ind)
     eevar = ee.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2)).dropna(dim='ncol')
-    rr_diff=get_crange2(eevar)
-    ax=plt.subplot(223,projection=crs.PlateCarree())
-    Plot_2D( ee,ax=ax,cmap=cmaps.BlueWhiteOrangeRed,ranges=rr_diff,unit=unit,unit_size=12,\
-                  scrip_file=scrip,\
-                    lon_range=[lon1,lon2], lat_range=[lat1,lat2],
-                    unit_offset=[-0.6,-2.2],pad=0.07,shrink=1,\
-                  grid_line=True, grid_line_lw=0.1).plot(rr_diff)
-    ax.text(0.005,1.03,case2+' $-$ '+case1,size=15,transform=ax.transAxes)
-    ax.text(0.83,1.03, 'mean: '+'{:0.2e}'.format((mean2.isel(season=ind).values-mean1.isel(season=ind).values)),size=15,transform=ax.transAxes)
     ff=rel.isel(season=ind)
+    rr_diff=get_crange2(eevar)
     rr_rel=[-100,-50,-20,-10,-5,-2,2,5,10,20,50,100]
-    rr_rel=[-100,-90,-80,-70,-60,-50,-20,-10,-5,-2,2,5,10,20,50,60,70,80,90,100]
-    ax=plt.subplot(224,projection=crs.PlateCarree())
-    Plot_2D( ff,ax=ax,cmap=cmaps.BlueWhiteOrangeRed,ranges=rr_rel,unit='[%]',unit_size=12,\
-                  scrip_file=scrip,\
-                    lon_range=[lon1,lon2], lat_range=[lat1,lat2],
-                    unit_offset=[-0.6,-2.2],pad=0.07,shrink=1,\
-                  grid_line=True, grid_line_lw=0.1).plot(rr_rel)
-    ax.text(0.005,1.03,'Relative diff (%)',size=15,transform=ax.transAxes)
-    plt.tight_layout()
-    plt.savefig(str(path)+'/'+var+'_'+ss[ind]+'_latlon_'+pval+'.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
+    m1 = mean1.isel(season=ind).values
+    m2 = mean2.isel(season=ind).values
+    m3 = m2-m1
+    m4 = (m3/abs(m1))*100
+    ss = ['ANN','DJF','JJA']
+    titles = [case1,case2,case2+' $-$\n'+case1,'Relative diff (%)']
+    means = [m1,m2,m3,m4]
+    colBars = [rr,rr,rr_diff,rr_rel]
+    colMaps = [cmaps.amwg256,cmaps.amwg256,cmaps.BlueWhiteOrangeRed,cmaps.BlueWhiteOrangeRed]
+    units = [unit,unit,unit,'[%]']
+    varbls = [dd1,dd2,ee,ff]
 
+    fig = plt.figure(figsize=(18,12))
+
+    for i,t,m,colr,u,cm,vals in zip([1,2,3,4],titles,means,colBars,units,colMaps,varbls):
+        panel=plt.subplot(220+i,projection=crs.PlateCarree())
+        get_plots( vals,ax=panel,cmap=cm,levels=colr,\
+                     scrip_file=scrip,figsize=fig,\
+                        lon_range=[lon1,lon2], lat_range=[lat1,lat2],
+                        unit=u).get_map()
+        panel.text(0.005,1.03,t,size=15,transform=panel.transAxes)
+        panel.text(0.8,1.03, 'mean: '+'{:0.2e}'.format(m),size=15,transform=panel.transAxes)
+
+    ## Saving figure
+    plt.savefig(str(path)+'/'+var+'_'+ss[ind]+'_latlon_'+pval+'.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
 
 
 
