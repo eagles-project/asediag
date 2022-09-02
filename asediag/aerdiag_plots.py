@@ -7,7 +7,26 @@ import cartopy.feature as cfeature
 import cmaps
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from matplotlib.collections import PolyCollection
+import pandas as pd
 
+def rounding(n):
+    try:
+        sgn = -1 if n<0 else 1
+        num = format(abs(n)-int(abs(n)),'f')
+        if int(num[2:])<1:
+            d = (abs(n))
+            return sgn * d
+        else:
+            for i,e in enumerate(num[2:]):
+                if e!= '0':
+                    if i==0:
+                        d = int(abs(n)) + float(num[:i+5])
+                    else:
+                        d = int(abs(n)) + float(num[:i+4])
+            return sgn * d
+    except:
+        return np.nan
+    
 class get_plots(object):
     
     def __init__(self,var,ax,**kwargs):
@@ -80,7 +99,8 @@ class get_plots(object):
         var, verts = self.get_verts()
         kwd_polycollection = {}
         kwd_polycollection['edgecolor'] = 'k'
-        kwd_polycollection['lw'] = 0.1
+        kwd_polycollection['lw'] = 0.05
+        plt.rcParams['font.family'] = 'STIXGeneral'
         ## levels
         ranges=self.rr
         self.ax.set_global()
@@ -109,26 +129,30 @@ class get_plots(object):
         self.ax.grid( lw=0.5, color='#EBE7E0', alpha=0.5, linestyle='-.')
         ## Take care of the colorbar
         fig = self.ax.figure
-        cbar_ticks=list(map(str,ranges))
-        positions = self.ax.get_position()
-        gapy = positions.y0-positions.y1
-        gapx = positions.x0-positions.x1
-        ratio = gapy/gapx
+        ## rounding the colorbar ticks
+        s1 = pd.DataFrame(ranges)
+        s2 = s1.applymap(lambda x: rounding(x) if ((abs(x)>1e-5) and (abs(x)<1e5)) else '{:.0e}'.format(x))[0].tolist()
+        cbar_ticks=list(map(str,s2))
+        cbar_ticks = [i.rstrip('0').rstrip('.') for i in cbar_ticks]
+        ## Dynamic page size depending on the lat/lon ranges or panel size
+        if self.figsize != None:
+            positions = self.ax.get_position()
+            gapy = positions.y0-positions.y1
+            gapx = positions.x0-positions.x1
+            ratio = gapy/gapx
+            if (ratio < 0.6) and (ratio > 0.4):
+                self.figsize.set_size_inches(18,10,forward=True)
+                plt.draw()
+            elif (ratio < 0.4):
+                self.figsize.set_size_inches(18,7,forward=True)
+                plt.draw()
+            elif (ratio > 1) and (ratio < 1.3):
+                self.figsize.set_size_inches(16,16,forward=True)
+                plt.draw()
+            elif (ratio > 1.3):
+                self.figsize.set_size_inches(14,18,forward=True)
+                plt.draw()
 
-        if (ratio < 0.6) and (ratio > 0.4):
-            self.figsize.set_size_inches(18,10)
-            plt.draw()
-        elif (ratio < 0.4):
-            self.figsize.set_size_inches(18,7)
-            plt.draw()
-        elif (ratio > 1) and (ratio < 1.3):
-            self.figsize.set_size_inches(16,16)
-            plt.draw()
-        elif (ratio > 1.3):
-            self.figsize.set_size_inches(14,18)
-            plt.draw()
-
-    
         positions = self.ax.get_position()
         cax = fig.add_axes([positions.x0,positions.y0-0.06,positions.x1-positions.x0,0.02])
         cbar = fig.colorbar(im,cax=cax,orientation='horizontal',ticks=ranges,extend='both',fraction=0.08)
@@ -136,3 +160,5 @@ class get_plots(object):
         cbar.set_label(label=self.unit,size=self.labelsize)
         ## panel box thickness
         plt.setp(self.ax.spines.values(),lw=1.5)
+
+        
