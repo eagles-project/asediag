@@ -428,7 +428,7 @@ def forcing_plots(plot_vars,path,area,season,plane,lon1,lon2,lat1,lat2,scrip):
                'TOA $\u0394$F : RES','TOA $\u0394$F$_{SW}$ : RES','TOA $\u0394$F$_{LW}$ : RES']
     labels=['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)',\
            '(k)','(l)','(m)','(n)','(o)']
-    plt.figure(figsize=(18,22))
+    plt.figure(figsize=(18,16))
     rr = [-20.,-10.,-5.,-2.,-1.,-0.5,0.5,1.,2.,5.,10.,20.]
     i=1
     for var,t,l in zip(plot_vars,titles,labels):
