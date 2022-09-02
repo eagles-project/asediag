@@ -39,6 +39,7 @@ class get_plots(object):
         self.cm = kwargs.get('cmap',cmaps.amwg256)
         self.labelsize = kwargs.get('labelsize',13)
         self.unit = kwargs.get('unit','unit')
+        self.gridLines = kwargs.get('gridLines',True)
         self.map_proj = kwargs.get('projection',crs.PlateCarree())
         self.rr = kwargs.get('levels',[0.,0.000274,0.00307,0.0214,0.0793,.198,.392,.682,1.13,5.,10.,32.9])
     
@@ -98,8 +99,9 @@ class get_plots(object):
     def get_map(self):
         var, verts = self.get_verts()
         kwd_polycollection = {}
-        kwd_polycollection['edgecolor'] = 'k'
-        kwd_polycollection['lw'] = 0.05
+        if self.gridLines == True:
+            kwd_polycollection['edgecolor'] = 'k'
+            kwd_polycollection['lw'] = 0.05
         plt.rcParams['font.family'] = 'STIXGeneral'
         ## levels
         ranges=self.rr

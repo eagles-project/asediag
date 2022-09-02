@@ -429,15 +429,16 @@ def forcing_plots(plot_vars,path,area,season,plane,lon1,lon2,lat1,lat2,scrip):
     labels=['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)',\
            '(k)','(l)','(m)','(n)','(o)']
     plt.figure(figsize=(18,22))
-    rr = [-20,-10,-5,-2,-1,-0.5,0.5,1,2,5,10,20]
+    rr = [-20.,-10.,-5.,-2.,-1.,-0.5,0.5,1.,2.,5.,10.,20.]
     i=1
     for var,t,l in zip(plot_vars,titles,labels):
         ax=plt.subplot(5,3,0+i,projection=crs.PlateCarree())
         m=(var*area).sum(['ncol'])/(area).sum(['ncol'])
-        Plot_2D( var,ax=ax,cmap=cmaps.BlueWhiteOrangeRed,ranges=rr,\
-             scrip_file=scrip,lon_range=[lon1,lon2], lat_range=[lat1,lat2],title=t,title_size=15,
-                unit_offset=[-0.6,-2.2],pad=0.15,shrink=1,resolution="50m",unit='[W m$^{-2}$]',unit_size=10,\
-             extend='neither', country=False,label_size=12).plot(rr)
+        get_plots( var,ax=ax,cmap=cmaps.BlueWhiteOrangeRed,levels=rr,\
+                     scrip_file=scrip,gridLines=False,\
+                        lon_range=[lon1,lon2], lat_range=[lat1,lat2],
+                        unit='[W m$^{-2}$]').get_map()
+        ax.text(0.005,1.03,t,size=12,transform=ax.transAxes)
         ax.text(0.89,1.03, '{:0.3f}'.format(m.values),size=12,transform=ax.transAxes)
         ax.text(0.05,0.95,l,size=12,transform=ax.transAxes,va='top',bbox={'facecolor':'white','pad':1,'edgecolor':'none'})
         i+=1
