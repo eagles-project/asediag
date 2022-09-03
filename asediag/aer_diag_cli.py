@@ -58,9 +58,9 @@ def main():
         case2 = path2.strip().split('/')[-3]
     path = str(outpath)+'/'+case2+'_minus_'+case1
     print('\nSelected output directoy:',path)
-    ## copying the adiags content to out dir (i.e. outpath)
+    ## copying the template content to out dir (i.e. outpath)
     resource_package = __name__
-    resource_path = 'adiags'
+    resource_path = 'template'
     try:
         tmp = pkg_resources.resource_filename(resource_package, resource_path)
         shutil.copytree(tmp, path)

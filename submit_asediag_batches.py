@@ -1,13 +1,20 @@
+'''
+This will produce the batch scripts based on the 
+user provided info in the config file (e.g., batch_config.ini).
+Submit batch scripts: python submit_asediag_batches.py
+'''
 import configparser
 import shutil
 import pkg_resources
 from subprocess import Popen, PIPE, STDOUT
 
 def exec_shell(cmd):
+    '''func to execute shell commands'''
     cmd_split = cmd.split(' ')
     p = Popen(cmd_split, stdout=PIPE, stdin=PIPE, stderr=STDOUT, universal_newlines=True)
     op, _ = p.communicate()
 
+## parsing config file to read user-defined variables
 config = configparser.ConfigParser(allow_no_value=True)
 config.read('batch_config.ini')
 
@@ -26,15 +33,19 @@ region = config.get('CMD','region')
 
 case1 = inDirectory1.strip().split('/')[-3]
 case2 = inDirectory2.strip().split('/')[-3]
-
+## Dictionary for different diagnostics and their relevant command line inputs
+## For more info check the with help command: python asediag.py -h
 itemDict = {'latlon':' -vlist','tables':' -tab -hplot','forcings':' -forcing -hplot',\
             'surface':' -pval 0','200':' -pval 200','500':' -pval 500','850':' -pval 850'}
 
 for item in diags.split(','):
+    ## defines this script path (i.e. asediag)
     resource_package = __name__
     resource_path = 'asediag/batch_script/get_sediag.sh'
     tmp = pkg_resources.resource_filename(resource_package, resource_path)
+    ## copying the template batch file for each diagnostics (items)
     shutil.copy(tmp, outDirectory+'/get_sediag_'+item+'.sh')
+    ## repacing template with actual info from config
     with open(outDirectory+'/get_sediag_'+item+'.sh','r') as file:
         filedata = file.read()
         filedata = filedata.replace('<account>',account)
@@ -49,8 +60,9 @@ for item in diags.split(','):
         filedata = filedata.replace('<region>',region)
         filedata = filedata.replace('<scrip_file>','<scrip_file>'+itemDict[item])
         filedata = filedata.replace('<scrip_file>',scrip_file)
-
+    ## writing out to out directory
     with open(outDirectory+'/get_sediag_'+item+'.sh','w') as file:
         file.write(filedata)
+    ## submitting the batch jobs
     exec_shell(f'sbatch {outDirectory}/get_sediag_'+item+'.sh')
     

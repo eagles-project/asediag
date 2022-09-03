@@ -38,7 +38,7 @@ setup(
     url='https://github.com/TaufiqHassan/asediag',
     packages=find_packages(exclude=['docs', 'tests']),
     package_data = {
-            'adiags':['*'],
+            'template':['*'],
             },
     entry_points={
         'console_scripts':[
