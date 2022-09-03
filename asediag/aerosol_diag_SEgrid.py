@@ -20,7 +20,7 @@ def rounding(n):
         sgn = -1 if n<0 else 1
         num = format(abs(n)-int(abs(n)),'f')
         if int(num[2:])<1:
-            d = int(abs(n))
+            d = (abs(n))
             return sgn * d
         else:
             for i,e in enumerate(num[2:]):
@@ -579,14 +579,12 @@ def get_forcing_df(path1,path2,case1,case2,path,season='ANN',mod='eam',\
 def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,lat,scrip=None,reg='Global',path=None,grid=True):
     if reg!=None:
         lat1,lat2,lon1,lon2=get_latlon(reg)
-    elif reg == 'Global':
-        grid = False
-        lat1,lat2,lon1,lon2=lat.min(),lat.max(),lon.min(),lon.max()
     else:
         lat1,lat2,lon1,lon2=lat.min(),lat.max(),lon.min(),lon.max()
     if path==None:
         path = Path('.').absolute()
-        
+    if reg == 'Global':
+        grid = False 
     dd1=data1.isel(season=ind)
     var1 = dd1.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2)).dropna(dim='ncol')
     dd2=data2.isel(season=ind)
@@ -602,7 +600,7 @@ def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,l
     m3 = m2-m1
     m4 = (m3/abs(m1))*100
     ss = ['ANN','DJF','JJA']
-    titles = [case1,case2,case2+' $-$\n'+case1,'Relative diff (%)']
+    titles = ['Control Case','Test Case','Test Case'+' $-$ '+'Control Case','Relative diff (%)']
     means = [m1,m2,m3,m4]
     colBars = [rr,rr,rr_diff,rr_rel]
     colMaps = [cmaps.amwg256,cmaps.amwg256,cmaps.BlueWhiteOrangeRed,cmaps.BlueWhiteOrangeRed]
@@ -617,9 +615,12 @@ def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,l
                      scrip_file=scrip,figsize=fig,gridLines=grid,\
                         lon_range=[lon1,lon2], lat_range=[lat1,lat2],
                         unit=u).get_map()
-        panel.text(0.005,1.03,t,size=12,transform=panel.transAxes)
-        panel.text(0.8,1.03, 'mean: '+'{:0.2e}'.format(m),size=12,transform=panel.transAxes)
-
+        panel.text(0.005,1.03,t,size=15,transform=panel.transAxes)
+        panel.text(0.8,1.03, 'mean: '+'{:0.2e}'.format(m),size=15,transform=panel.transAxes)
+    
+    fig.suptitle(r'$\bf{Control\ Case:}$ '+case1+'\n'+\
+                 r'$\bf{Test\ Case:}$ '+case2+'\n'+r'$\bf{Plotting:}$ '+var,\
+                 fontsize=20,horizontalalignment='left',x=0.125,y=0.96)
     ## Saving figure
     plt.savefig(str(path)+'/'+var+'_'+ss[ind]+'_latlon_'+pval+'.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
 
