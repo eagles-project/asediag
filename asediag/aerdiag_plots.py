@@ -157,7 +157,7 @@ class get_plots(object):
 
         positions = self.ax.get_position()
         cax = fig.add_axes([positions.x0,positions.y0-0.06,positions.x1-positions.x0,0.02])
-        cbar = fig.colorbar(im,cax=cax,orientation='horizontal',ticks=ranges,extend='both',fraction=0.08)
+        cbar = fig.colorbar(im,cax=cax,orientation='horizontal',ticks=ranges,extend='neither',fraction=0.08)
         cbar.ax.set_xticklabels(cbar_ticks, size=self.labelsize )
         cbar.set_label(label=self.unit,size=self.labelsize)
         ## panel box thickness

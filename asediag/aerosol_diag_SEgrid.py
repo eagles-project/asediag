@@ -576,10 +576,11 @@ def get_forcing_df(path1,path2,case1,case2,path,season='ANN',mod='eam',\
     with open(path+'/'+'AllForcings_'+season+'.html','w') as f:
         f.write(htable)
 
-def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,lat,scrip=None,reg='Global',path=None):
+def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,lat,scrip=None,reg='Global',path=None,grid=True):
     if reg!=None:
         lat1,lat2,lon1,lon2=get_latlon(reg)
     elif reg == 'Global':
+        grid = False
         lat1,lat2,lon1,lon2=lat.min(),lat.max(),lon.min(),lon.max()
     else:
         lat1,lat2,lon1,lon2=lat.min(),lat.max(),lon.min(),lon.max()
@@ -613,7 +614,7 @@ def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,l
     for i,t,m,colr,u,cm,vals in zip([1,2,3,4],titles,means,colBars,units,colMaps,varbls):
         panel=plt.subplot(220+i,projection=crs.PlateCarree())
         get_plots( vals,ax=panel,cmap=cm,levels=colr,\
-                     scrip_file=scrip,figsize=fig,\
+                     scrip_file=scrip,figsize=fig,gridLines=grid,\
                         lon_range=[lon1,lon2], lat_range=[lat1,lat2],
                         unit=u).get_map()
         panel.text(0.005,1.03,t,size=12,transform=panel.transAxes)

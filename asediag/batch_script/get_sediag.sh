@@ -8,4 +8,4 @@
 
 source /share/apps/E3SM/conda_envs/base/etc/profile.d/conda.sh
 conda activate <env>
-python <asediag_dir>asediag.py -dir1 <dir1> -dir2 <dir2> -path <outDir> -m <model> -scrip <scrip_file> 
+python <asediag_dir>asediag.py -dir1 <dir1> -dir2 <dir2> -path <outDir> -m <model> -reg <region> -scrip <scrip_file> 

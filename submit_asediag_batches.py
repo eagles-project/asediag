@@ -22,6 +22,7 @@ model = config.get('CMD','model')
 walltime = config.get('CMD','walltime')
 scrip_file = config.get('CMD','scrip_file')
 diags = config.get('CMD','diags')
+region = config.get('CMD','region')
 
 case1 = inDirectory1.strip().split('/')[-3]
 case2 = inDirectory2.strip().split('/')[-3]
@@ -45,6 +46,7 @@ for item in diags.split(','):
         filedata = filedata.replace('<outDir>',outDirectory)
         filedata = filedata.replace('<model>',model)
         filedata = filedata.replace('<wallMin>',walltime)
+        filedata = filedata.replace('<region>',region)
         filedata = filedata.replace('<scrip_file>','<scrip_file>'+itemDict[item])
         filedata = filedata.replace('<scrip_file>',scrip_file)
 
