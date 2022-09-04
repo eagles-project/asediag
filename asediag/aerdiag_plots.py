@@ -23,7 +23,7 @@ def rounding(n):
                         d = int(abs(n)) + float(num[:i+5])
                     else:
                         d = int(abs(n)) + float(num[:i+4])
-            return sgn * d
+                    return sgn * d
     except:
         return np.nan
     
