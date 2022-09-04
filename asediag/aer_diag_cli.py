@@ -13,19 +13,19 @@ def main():
 
     parser = argparse.ArgumentParser()
     
-    parser.add_argument("-pval", help="p-level", default=None)
+    parser.add_argument("-pval", help="pressure levels for latlon plots (options: 0, 200, 500 and 850)", default=None)
     parser.add_argument("-dir1", help="case 1 directory", default=None)
     parser.add_argument("-dir2", help="case 2 directory", default=None)
     parser.add_argument("-path", help="analysis output directory", default=Path('.').absolute())
-    parser.add_argument("-cs1", help="case1", default=None)
-    parser.add_argument("-cs2", help="case2", default=None)
-    parser.add_argument("-m", help="model", default='eam')
-    parser.add_argument("-reg", help="region", default=None)
-    parser.add_argument("-loc", help="location", default=None)
-    parser.add_argument("-vlist", help="plot vlist variables", action='store_true', default=None)
+    parser.add_argument("-cs1", help="case1 name", default=None)
+    parser.add_argument("-cs2", help="case2 name", default=None)
+    parser.add_argument("-m", help="model (options: eam & cam)", default='eam')
+    parser.add_argument("-reg", help="select region", default=None)
+    parser.add_argument("-loc", help="select location", default=None)
+    parser.add_argument("-vlist", help="plot extra variables defined in cli", action='store_true', default=None)
     parser.add_argument("-tab", help="get budget tables", action='store_true', default=None)
     parser.add_argument("-forcing", help="get forcing analysis", action='store_true', default=None)
-    parser.add_argument("-hplot", help="horizontal plots", action='store_true', default=None)
+    parser.add_argument("-hplot", help="mute standard horizontal plots", action='store_true', default=None)
     parser.add_argument("-scrip", help="scrip file", \
                         default='/compyfs/www/hass877/share/emis_data/DECK120_to_SE/northamericax4v1pg2_scrip.nc')
    
@@ -58,9 +58,9 @@ def main():
         case2 = path2.strip().split('/')[-3]
     path = str(outpath)+'/'+case2+'_minus_'+case1
     print('\nSelected output directoy:',path)
-    ## copying the adiags content to out dir (i.e. outpath)
+    ## copying the template content to out dir (i.e. outpath)
     resource_package = __name__
-    resource_path = 'adiags'
+    resource_path = 'template'
     try:
         tmp = pkg_resources.resource_filename(resource_package, resource_path)
         shutil.copytree(tmp, path)
@@ -77,8 +77,8 @@ def main():
             print('getting data\n')
             print(path1,path2)
             print(path1.strip().split('/')[-3],pv)
-            aa=gather_data(path1,aer,path1.strip().split('/')[-3],plev=pv,reg=region)
-            bb=gather_data(path2,aer,path2.strip().split('/')[-3],plev=pv,reg=region)
+            aa=gather_data(path1,aer,case1,model,plev=pv,reg=region)
+            bb=gather_data(path2,aer,case2,model,plev=pv,reg=region)
             aa[0].load()
             bb[0].load()
             aa[1].load()
@@ -101,8 +101,8 @@ def main():
         print('\nPlotting is muted\n')
     if vl != None:
         print('\nPlotting all the extra variables\n')
-        aa=gather_data(path1,vlist,path1.strip().split('/')[-3],sv='y')
-        bb=gather_data(path2,vlist,path2.strip().split('/')[-3],sv='y')
+        aa=gather_data(path1,vlist,case1,model,sv='y')
+        bb=gather_data(path2,vlist,case2,model,sv='y')
         aa[0].load()
         bb[0].load()
         aa[1].load()

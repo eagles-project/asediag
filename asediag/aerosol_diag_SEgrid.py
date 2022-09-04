@@ -29,7 +29,7 @@ def rounding(n):
                         d = int(abs(n)) + float(num[:i+5])
                     else:
                         d = int(abs(n)) + float(num[:i+4])
-            return sgn * d
+                    return sgn * d
     except:
         return np.nan
 
@@ -356,15 +356,15 @@ def get_all_tables(ind,aer,path1,path2,case1,case2,path,reg,loc,mod):
         with open(path+'/'+col+'_'+ss[ind]+'.html','w') as f:
             f.write(htable)
 
-def gather_data(path,aer,case,plev=None,sv=None,fact=1,vertinit=None,unit=None,reg=None):
+def gather_data(path,aer,case,mod,plev=None,sv=None,fact=1,vertinit=None,unit=None,reg=None):
     ss = ['ANN','DJF','JJA']
     dlist = []
     mlist = []
     for s in ss:
         if sv!=None:
-            orig=get_singleV_hplots(path,case,s,aer,fact=1,vertinit=None,pval='radiation')
+            orig=get_singleV_hplots(path,case,s,aer,mod=mod,fact=1,vertinit=None,pval='radiation')
         else:
-            orig=get_hplots(path,case,s,aer,plev=plev,reg=reg)
+            orig=get_hplots(path,case,s,aer,mod=mod,plev=plev,reg=reg)
         dlist.append(orig[0])
         mlist.append(orig[1])
     data_combined=xr.concat(dlist,"season")
