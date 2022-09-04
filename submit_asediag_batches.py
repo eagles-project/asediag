@@ -15,6 +15,7 @@ def exec_shell(cmd):
     op, _ = p.communicate()
 
 ## parsing config file to read user-defined variables
+## Make sure the batch file is in the same directory
 config = configparser.ConfigParser(allow_no_value=True)
 config.read('batch_config.ini')
 
@@ -30,9 +31,14 @@ walltime = config.get('CMD','walltime')
 scrip_file = config.get('CMD','scrip_file')
 diags = config.get('CMD','diags')
 region = config.get('CMD','region')
+case1 = config.get('CMD','case1')
+case2 = config.get('CMD','case2')
 
-case1 = inDirectory1.strip().split('/')[-3]
-case2 = inDirectory2.strip().split('/')[-3]
+if case1==None:
+    case1 = inDirectory1.strip().split('/')[-3]
+if case2==None:
+    case2 = inDirectory2.strip().split('/')[-3]
+    
 ## Dictionary for different diagnostics and their relevant command line inputs
 ## For more info check the with help command: python asediag.py -h
 itemDict = {'latlon':' -vlist','tables':' -tab -hplot','forcings':' -forcing -hplot',\
@@ -55,6 +61,8 @@ for item in diags.split(','):
         filedata = filedata.replace('<dir1>',inDirectory1)
         filedata = filedata.replace('<dir2>',inDirectory2)
         filedata = filedata.replace('<outDir>',outDirectory)
+        filedata = filedata.replace('<case1>',case1)
+        filedata = filedata.replace('<case2>',case2)
         filedata = filedata.replace('<model>',model)
         filedata = filedata.replace('<wallMin>',walltime)
         filedata = filedata.replace('<region>',region)
@@ -64,5 +72,5 @@ for item in diags.split(','):
     with open(outDirectory+'/get_sediag_'+item+'.sh','w') as file:
         file.write(filedata)
     ## submitting the batch jobs
-    exec_shell(f'sbatch {outDirectory}/get_sediag_'+item+'.sh')
+    #exec_shell(f'sbatch {outDirectory}/get_sediag_'+item+'.sh')
     
