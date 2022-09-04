@@ -72,5 +72,5 @@ for item in diags.split(','):
     with open(outDirectory+'/get_sediag_'+item+'.sh','w') as file:
         file.write(filedata)
     ## submitting the batch jobs
-    #exec_shell(f'sbatch {outDirectory}/get_sediag_'+item+'.sh')
+    exec_shell(f'sbatch {outDirectory}/get_sediag_'+item+'.sh')
     
