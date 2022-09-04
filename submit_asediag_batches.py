@@ -42,7 +42,8 @@ if case2==None:
 ## Dictionary for different diagnostics and their relevant command line inputs
 ## For more info check the with help command: python asediag.py -h
 itemDict = {'latlon':' -vlist','tables':' -tab -hplot','forcings':' -forcing -hplot',\
-            'surface':' -pval 0','200':' -pval 200','500':' -pval 500','850':' -pval 850'}
+            'surface':' -pval 0','200':' -pval 200','500':' -pval 500','850':' -pval 850',\
+                'zonal':' -prof -hplot'}
 
 for item in diags.split(','):
     ## defines this script path (i.e. asediag)
