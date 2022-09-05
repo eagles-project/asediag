@@ -165,6 +165,16 @@ def get_hplots(path,case,ts,aer,plev=None,mod='eam',reg=None):
 
     return vdata,mean,var_vars+[aer],pval,lon,lat
 
+def apply_binning(var,lat,plev):
+    binn=[]
+    for lval in np.arange(-91,92):
+        binn.append(var.where((lat>=lval)).where((lat<lval+1)).mean('ncol').values)
+    data=xr.DataArray(binn)
+    data=data.rename({'dim_0':'lat','dim_1':'ilev'})
+    data=data.assign_coords(lat=np.arange(-91,92))
+    data=data.assign_coords(ilev=plev[1:])
+    return data
+
 def get_vplots(path,case,ts,aer,mod='eam'):
     ## reading data as xarray
     data = xr.open_mfdataset(path+case+'.'+mod+'.'+ts+'.*_climo.nc')
@@ -201,7 +211,12 @@ def get_vplots(path,case,ts,aer,mod='eam'):
     vdata = vdata*fact
     ## getting total
     vdata[aer] = vdata.to_array().sum('variable')
-    return vdata,var_vars+[aer],lon,lat,p
+    new_vdata = xr.Dataset()
+    new_vdata=new_vdata.assign_coords(lat=np.arange(-91,92))
+    new_vdata=new_vdata.assign_coords(ilev=p.ilev[1:])
+    for v in var_vars+[aer]:
+        new_vdata[v]=apply_binning(vdata[v],lat,p.ilev)
+    return new_vdata,var_vars+[aer],lon,lat,p
 
 def get_singleV_hplots(path,case,ts,var,fact=1,vertinit=None,pval='radiation',mod='eam'):
     ## reading data as xarray
@@ -443,7 +458,7 @@ def gather_ProfData(path,aer,case,mod):
         dlist.append(orig[0])
     data_combined=xr.concat(dlist,"season")
         
-    return data_combined,orig[-2],orig[-3],orig[-1]
+    return data_combined,orig[1],orig[-2],orig[-3],orig[-1]
 
 def get_latlon(reg):
     regions = {'CONUS':'24.74 49.34 -124.78 -66.95',\
@@ -665,45 +680,11 @@ def getVmap(data,ranges,ax,unit,cm):
 
 def get_vert_profiles(data1,data2,diff,rel,var,ind,case1,case2,lon,lat,plev,path=None):
     dd1=data1.isel(season=ind)
-    binn1=[]
-    for lval in np.arange(-91,92):
-        binn1.append(dd1.where((lat>=lval)).where((lat<lval+1)).mean('ncol').values)
-    var1=xr.DataArray(binn1)
-    var1=var1.rename({'dim_0':'lat','dim_1':'ilev'})
-    var1=var1.assign_coords(lat=np.arange(-91,92))
-    var1=var1.assign_coords(ilev=plev)
-
     dd2=data2.isel(season=ind)
-    binn1=[]
-    for lval in np.arange(-91,92):
-        binn1.append(dd2.where((lat>=lval)).where((lat<lval+1)).mean('ncol').values)
-    var2=xr.DataArray(binn1)
-    var2=var2.rename({'dim_0':'lat','dim_1':'ilev'})
-    var2=var2.assign_coords(lat=np.arange(-91,92))
-    var2=var2.assign_coords(ilev=plev)
-    
-    rr=get_crange3(var1,var2)
-    
-    ee=diff.isel(season=ind)
-    binn1=[]
-    for lval in np.arange(-91,92):
-        binn1.append(ee.where((lat>=lval)).where((lat<lval+1)).mean('ncol').values)
-    var3=xr.DataArray(binn1)
-    var3=var3.rename({'dim_0':'lat','dim_1':'ilev'})
-    var3=var3.assign_coords(lat=np.arange(-91,92))
-    var3=var3.assign_coords(ilev=plev)
-    
-    rr_diff=get_crange4(var3)
-    
+    rr=get_crange3(dd1,dd2)
+    ee=diff.isel(season=ind)   
+    rr_diff=get_crange4(ee)
     ff=rel.isel(season=ind)
-    binn1=[]
-    for lval in np.arange(-91,92):
-        binn1.append(ff.where((lat>=lval)).where((lat<lval+1)).mean('ncol').values)
-    var4=xr.DataArray(binn1)
-    var4=var4.rename({'dim_0':'lat','dim_1':'ilev'})
-    var4=var4.assign_coords(lat=np.arange(-91,92))
-    var4=var4.assign_coords(ilev=plev)
-    
     rr_rel=[-100.,-50.,-20.,-10.,-5.,-2.,2.,5.,10.,20.,50.,100.]
     
     ss = ['ANN','DJF','JJA']
@@ -711,7 +692,7 @@ def get_vert_profiles(data1,data2,diff,rel,var,ind,case1,case2,lon,lat,plev,path
     colBars = [rr,rr,rr_diff,rr_rel]
     colMaps = [cmaps.amwg256,cmaps.amwg256,cmaps.BlueWhiteOrangeRed,cmaps.BlueWhiteOrangeRed]
     units = ['[ug m$^{-3}$]','[ug m$^{-3}$]','[ug m$^{-3}$]','[%]']
-    varbls = [var1,var2,var3,var4]
+    varbls = [dd1,dd2,ee,ff]
 
     fig = plt.figure(figsize=(18,14))
 
