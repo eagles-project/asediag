@@ -174,7 +174,7 @@ def get_vplots(path,case,ts,aer,mod='eam'):
     if ts=='ANN':
         data = data.rename({'year':'season'})
     if aer=='num':
-        fact = 1.0
+        fact = 1e-6
     else:
         fact = factbb
     ## all variable list
@@ -670,7 +670,11 @@ def get_vert_profiles(data1,data2,diff,rel,var,ind,case1,case2,path=None):
     titles = ['Control Case','Test Case','Test Case'+' $-$ '+'Control Case','Relative diff (%)']
     colBars = [rr,rr,rr_diff,rr_rel]
     colMaps = [cmaps.amwg256,cmaps.amwg256,cmaps.BlueWhiteOrangeRed,cmaps.BlueWhiteOrangeRed]
-    units = ['[ug m$^{-3}$]','[ug m$^{-3}$]','[ug m$^{-3}$]','[%]']
+    if 'num' in var:
+        gunit = '[# cm$^{-3}$]'
+    else:
+        gunit = '[ug m$^{-3}$]'
+    units = [gunit,gunit,gunit,'[%]']
     varbls = [dd1,dd2,ee,ff]
 
     fig = plt.figure(figsize=(18,14))
