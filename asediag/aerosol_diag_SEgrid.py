@@ -165,41 +165,18 @@ def get_hplots(path,case,ts,aer,plev=None,mod='eam',reg=None):
 
     return vdata,mean,var_vars+[aer],pval,lon,lat
 
-def apply_binning(var,lat,plev):
-    binn=[]
-    for lval in np.arange(-91,92):
-        binn.append(var.where((lat>=lval)).where((lat<lval+1)).mean('ncol').values)
-    data=xr.DataArray(binn)
-    data=data.rename({'dim_0':'lat','dim_1':'ilev'})
-    data=data.assign_coords(lat=np.arange(-91,92))
-    data=data.assign_coords(ilev=plev[1:])
-    return data
-
 def get_vplots(path,case,ts,aer,mod='eam'):
     ## reading data as xarray
     data = xr.open_mfdataset(path+case+'.'+mod+'.'+ts+'.*_climo.nc')
-    lon = data['lon']
-    lon[lon > 180.] -= 360.
-    lat = data['lat']
-    
-    if ts=='ANN':
-        data = data.rename({'year':'season'})
     fact = 1e9
     factaa = 1.01325e5 / 8.31446261815324 / 273.15 * 28.9647 / 1.e9   # kg-air/cm3-air
     factbb = factaa * 1.e15  # ug-air/m3-air
-
+    if ts=='ANN':
+        data = data.rename({'year':'season'})
     if aer=='num':
         fact = 1.0
     else:
         fact = factbb
-    ## factors
-    ha = data['hyai']
-    hb = data['hybi']
-    p0 = data['P0']
-    ps = data['PS']
-    p = ha*p0+hb*ps
-    p = p.transpose('ilev','ncol')
-    p = p/100
     ## all variable list
     vlist = list(data.variables.keys())
     # Total BC burden
@@ -211,12 +188,14 @@ def get_vplots(path,case,ts,aer,mod='eam'):
     vdata = vdata*fact
     ## getting total
     vdata[aer] = vdata.to_array().sum('variable')
-    new_vdata = xr.Dataset()
-    new_vdata=new_vdata.assign_coords(lat=np.arange(-91,92))
-    new_vdata=new_vdata.assign_coords(ilev=p.ilev[1:])
-    for v in var_vars+[aer]:
-        new_vdata[v]=apply_binning(vdata[v],lat,p.ilev)
-    return new_vdata,var_vars+[aer],lon,lat,p
+    ll=data['lat'].round().values.tolist()
+    all_ll=ll*len(data.lev)
+    dd=vdata.to_dataframe()
+    dd=dd.drop(columns=['season'])
+    dd['lat']=all_ll
+    print(dd.columns)
+    vdata=dd.groupby(['lev','lat']).mean().to_xarray()
+    return vdata,var_vars+[aer]
 
 def get_singleV_hplots(path,case,ts,var,fact=1,vertinit=None,pval='radiation',mod='eam'):
     ## reading data as xarray
@@ -458,7 +437,7 @@ def gather_ProfData(path,aer,case,mod):
         dlist.append(orig[0])
     data_combined=xr.concat(dlist,"season")
         
-    return data_combined,orig[1],orig[-2],orig[-3],orig[-1]
+    return data_combined,orig[1]
 
 def get_latlon(reg):
     regions = {'CONUS':'24.74 49.34 -124.78 -66.95',\
@@ -654,7 +633,7 @@ def get_forcing_df(path1,path2,case1,case2,path,season='ANN',mod='eam',\
         f.write(htable)
 
 def getVmap(data,ranges,ax,unit,cm):
-    x,y = np.meshgrid(data['ilev'],data['lat'])
+    x,y = np.meshgrid(data['lev'],data['lat'])
     im=ax.pcolormesh(y,x,data[:],cmap=cm,\
                   norm=matplotlib.colors.BoundaryNorm(boundaries=ranges, ncolors=256))
     plt.gca().invert_yaxis()
@@ -678,7 +657,7 @@ def getVmap(data,ranges,ax,unit,cm):
     plt.setp(ax.spines.values(),lw=1.5)
     plt.ylabel('Pressure [hPa]',fontsize=15)
 
-def get_vert_profiles(data1,data2,diff,rel,var,ind,case1,case2,lon,lat,plev,path=None):
+def get_vert_profiles(data1,data2,diff,rel,var,ind,case1,case2,path=None):
     dd1=data1.isel(season=ind)
     dd2=data2.isel(season=ind)
     rr=get_crange3(dd1,dd2)

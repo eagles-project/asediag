@@ -128,21 +128,18 @@ def main():
         for aer in aer_list[:]:
             print('getting data\n')
             print(path1,path2)
-            print('\nProducing profiles can take some time in SE-grid\nbinning data . . .')
+            print('\nProducing profiles can take some time in SE-grid\nbinning data . . .\n')
             aa=gather_ProfData(path1,aer,case1,model)
             bb=gather_ProfData(path2,aer,case2,model)
             aa[0].load()
             bb[0].load()
-            lon = aa[3]
-            lat = aa[2]
-            plev = aa[4].ilev[1:]
             print('Loaded data\n')
             diff = bb[0]-aa[0]
             rel = (diff/abs(aa[0]))*100
             processes=[]
             for ind,var in product([0,1,2],aa[1]):
                 p = mp.Process(target=get_vert_profiles,args=[aa[0][var],bb[0][var],diff[var],rel[var],var,ind,case1,case2,\
-                                        lon,lat,plev],kwargs={'path':path+'/set01'})
+                                        ],kwargs={'path':path+'/set01'})
                 p.start()
                 processes.append(p)
             for process in processes:
