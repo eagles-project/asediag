@@ -384,24 +384,23 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam'):
                 'cloudchem (AQSO4)','condensation-aging'])
     return df
 
-def get_all_tables(ind,aer,path1,path2,case1,case2,path,reg,loc,mod):
+def get_all_tables(ind,aer,path1,path2,case1,case2):
     ss = ['ANN','DJF','JJA']
-    cdatadef=get_tables(path1,case1,ss[ind],aer,reg=reg,loc=loc,mod=mod)
-    cdatase=get_tables(path2,case2,ss[ind],aer,reg=reg,loc=loc,mod=mod)
+    cdatadef=get_tables(path1,case1,ss[ind],aer)
+    cdatase=get_tables(path2,case2,ss[ind],aer)
     cdatadiff = cdatase[cdatase.columns[1:]] - cdatadef[cdatase.columns[1:]]
     cdatarel = (cdatadiff/abs(cdatase[cdatase.columns[1:]]))*100
     for col in cdatarel.columns:
         df = pd.DataFrame()
-        df[case1]=cdatadef[col]
-        df[case2]=cdatase[col]
+        df['Control Case']=cdatadef[col]
+        df['Test Case']=cdatase[col]
         df['difference']=cdatadiff[col]
         df['rel diff (%)']=cdatarel[col]
-        pd.options.display.float_format = '{:g}'.format
-        df = df.applymap(lambda x: rounding(x) if ((abs(x)>1e-5) and (abs(x)<1e5)) else '{:.0e}'.format(x))
-        htable = build_table(df,'grey_light',index=True,padding='5px',text_align='right')
-        with open(path+'/'+col+'_'+ss[ind]+'.html','w') as f:
+        htable = build_table(df,'grey_light',index=True,padding='5px',text_align='center')
+        htable = htable.replace('<thead>','<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto">Control Case:  '+case1+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto">Test Case:  '+case2+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto">Table for:  '+aer+'</caption>\n<thead>')
+        with open('test.html','w') as f:
             f.write(htable)
-
+            
 def gather_data(path,aer,case,mod,plev=None,sv=None,fact=1,vertinit=None,unit=None,reg=None):
     ss = ['ANN','DJF','JJA']
     dlist = []
