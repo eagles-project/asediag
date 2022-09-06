@@ -633,8 +633,8 @@ def get_forcing_df(path1,path2,case1,case2,path,season='ANN',mod='eam',\
         f.write(htable)
 
 def getVmap(data,ranges,ax,unit,cm):
-    x,y = np.meshgrid(data['lev'],data['lat'])
-    im=ax.pcolormesh(y,x,data[:],cmap=cm,\
+    x,y = np.meshgrid(data['lat'],data['lev'])
+    im=ax.pcolormesh(x,y,data[:],cmap=cm,\
                   norm=matplotlib.colors.BoundaryNorm(boundaries=ranges, ncolors=256))
     plt.gca().invert_yaxis()
     plt.xlim([-89,88])
