@@ -174,7 +174,7 @@ def get_vplots(path,case,ts,aer,mod='eam'):
     if ts=='ANN':
         data = data.rename({'year':'season'})
     if aer=='num':
-        fact = 1e-6
+        fact = factaa
     else:
         fact = factbb
     ## all variable list
