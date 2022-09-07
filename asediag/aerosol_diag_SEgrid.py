@@ -62,6 +62,20 @@ def get_crange2(diff):
     s2 = np.array([-100,-50,-20,-10,-5,-2,-1,1,2,5,10,20,50,100])*(10**(expo)/100)
     return s2
 
+def get_crange3(v1,v2):
+    s1=[0.05,0.1,0.2,0.5,1,2,5,10,20,50,100,200,500,1000]
+    aagg=(np.max(v1).values+np.max(v2).values)/2
+    aagg=np.log10(aagg)
+    s1=np.array(s1)*(10**(np.round(aagg-2.7)))
+    return s1
+
+def get_crange4(adiff):
+    s2=[-100,-50.,-20,-10,-5,-2,2,5,10,20,50,100]
+    aagg=0.25*(abs(np.max(adiff).values)+abs(np.min(adiff).values))/2
+    aagg=np.log10(aagg)
+    s2=np.array(s2)*(10**(np.round(aagg-1.7)))*10
+    return s2
+
 def get_vertint(vdata,ha,p0,hb,ps,grav,fact):
     ## calc. dp
     delp = 0*vdata
@@ -150,6 +164,38 @@ def get_hplots(path,case,ts,aer,plev=None,mod='eam',reg=None):
     mean = (vdatalatlon*arealatlon).sum(['ncol'])/(arealatlon).sum(['ncol'])
 
     return vdata,mean,var_vars+[aer],pval,lon,lat
+
+def get_vplots(path,case,ts,aer,mod='eam'):
+    ## reading data as xarray
+    data = xr.open_mfdataset(path+case+'.'+mod+'.'+ts+'.*_climo.nc')
+    fact = 1e9
+    factaa = 1.01325e5 / 8.31446261815324 / 273.15 * 28.9647 / 1.e9   # kg-air/cm3-air
+    factbb = factaa * 1.e15  # ug-air/m3-air
+    if ts=='ANN':
+        data = data.rename({'year':'season'})
+    if aer=='num':
+        fact = factaa
+    else:
+        fact = factbb
+    ## all variable list
+    vlist = list(data.variables.keys())
+    # Total BC burden
+    var_avars = fnmatch.filter(vlist,aer+'_a?')
+    var_cvars = fnmatch.filter(vlist,aer+'_c?')
+    var_vars = var_avars+var_cvars
+    print(var_vars)
+    vdata = data[var_vars]
+    vdata = vdata*fact
+    ## getting total
+    vdata[aer] = vdata.to_array().sum('variable')
+    ll=data['lat'].round().values.tolist()
+    all_ll=ll*len(data.lev)
+    dd=vdata.to_dataframe()
+    dd=dd.drop(columns=['season'])
+    dd['lat']=all_ll
+    print(dd.columns)
+    vdata=dd.groupby(['lev','lat']).mean().to_xarray()
+    return vdata,var_vars+[aer]
 
 def get_singleV_hplots(path,case,ts,var,fact=1,vertinit=None,pval='radiation',mod='eam'):
     ## reading data as xarray
@@ -346,16 +392,17 @@ def get_all_tables(ind,aer,path1,path2,case1,case2,path,reg,loc,mod):
     cdatarel = (cdatadiff/abs(cdatase[cdatase.columns[1:]]))*100
     for col in cdatarel.columns:
         df = pd.DataFrame()
-        df[case1]=cdatadef[col]
-        df[case2]=cdatase[col]
+        df['Control Case']=cdatadef[col]
+        df['Test Case']=cdatase[col]
         df['difference']=cdatadiff[col]
         df['rel diff (%)']=cdatarel[col]
         pd.options.display.float_format = '{:g}'.format
         df = df.applymap(lambda x: rounding(x) if ((abs(x)>1e-5) and (abs(x)<1e5)) else '{:.0e}'.format(x))
         htable = build_table(df,'grey_light',index=True,padding='5px',text_align='right')
+        htable = htable.replace('<thead>','<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto">Control Case:  '+case1+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto">Test Case:  '+case2+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto">Table for:  '+aer+'</caption>\n<thead>')
         with open(path+'/'+col+'_'+ss[ind]+'.html','w') as f:
             f.write(htable)
-
+            
 def gather_data(path,aer,case,mod,plev=None,sv=None,fact=1,vertinit=None,unit=None,reg=None):
     ss = ['ANN','DJF','JJA']
     dlist = []
@@ -382,6 +429,16 @@ def gather_data(path,aer,case,mod,plev=None,sv=None,fact=1,vertinit=None,unit=No
                 unit = "[ug $m^{-3}$]"
         
     return data_combined,m_combined,orig[2],orig[3],unit,orig[4],orig[5]
+
+def gather_ProfData(path,aer,case,mod):
+    ss = ['ANN','DJF','JJA']
+    dlist = []
+    for s in ss:
+        orig=get_vplots(path,case,s,aer,mod=mod)
+        dlist.append(orig[0])
+    data_combined=xr.concat(dlist,"season")
+        
+    return data_combined,orig[1]
 
 def get_latlon(reg):
     regions = {'CONUS':'24.74 49.34 -124.78 -66.95',\
@@ -576,6 +633,65 @@ def get_forcing_df(path1,path2,case1,case2,path,season='ANN',mod='eam',\
     with open(path+'/'+'AllForcings_'+season+'.html','w') as f:
         f.write(htable)
 
+def getVmap(data,ranges,ax,unit,cm):
+    x,y = np.meshgrid(data['lat'],data['lev'])
+    im=ax.pcolormesh(x,y,data[:],cmap=cm,\
+                  norm=matplotlib.colors.BoundaryNorm(boundaries=ranges, ncolors=256))
+    plt.gca().invert_yaxis()
+    plt.xlim([-89,88])
+    plt.xticks([-60,-30,0,30,60])
+    ax.set_xticklabels(['60S','30S','0','30N','60N'],size=12)
+    ax.yaxis.set_tick_params(width=1.5,length=5)
+    ax.xaxis.set_tick_params(width=1.5,length=5)
+    ax.grid( lw=0.5, color='#EBE7E0', alpha=0.5, linestyle='-.')
+    ax.tick_params(labelsize=12)
+    cbar=plt.colorbar(im,ticks=ranges,drawedges=True)
+    s1 = pd.DataFrame(ranges)
+    s2 = s1.applymap(lambda x: rounding(x) if ((abs(x)>1e-5) and (abs(x)<1e5)) else '{:.0e}'.format(x))[0].tolist()
+    cbar_ticks=list(map(str,s2))
+    cbar_ticks = [i.rstrip('0').rstrip('.') for i in cbar_ticks]
+    #cbar_ticks=list(map(str,ranges))
+    cbar.ax.set_yticklabels(['']+cbar_ticks[1:-1]+[''],size=12)
+    cbar.set_label(label=unit,size=12)
+    cbar.outline.set_linewidth(1.5)
+    cbar.dividers.set_linewidth(1.5)
+    plt.setp(ax.spines.values(),lw=1.5)
+    plt.ylabel('Pressure [hPa]',fontsize=15)
+
+def get_vert_profiles(data1,data2,diff,rel,var,ind,case1,case2,path=None):
+    dd1=data1.isel(season=ind)
+    dd2=data2.isel(season=ind)
+    rr=get_crange3(dd1,dd2)
+    ee=diff.isel(season=ind)   
+    rr_diff=get_crange4(ee)
+    ff=rel.isel(season=ind)
+    rr_rel=[-100.,-50.,-20.,-10.,-5.,-2.,2.,5.,10.,20.,50.,100.]
+    
+    ss = ['ANN','DJF','JJA']
+    titles = ['Control Case','Test Case','Test Case'+' $-$ '+'Control Case','Relative diff (%)']
+    colBars = [rr,rr,rr_diff,rr_rel]
+    colMaps = [cmaps.amwg256,cmaps.amwg256,cmaps.BlueWhiteOrangeRed,cmaps.BlueWhiteOrangeRed]
+    if 'num' in var:
+        gunit = '[# cm$^{-3}$]'
+    else:
+        gunit = '[ug m$^{-3}$]'
+    units = [gunit,gunit,gunit,'[%]']
+    varbls = [dd1,dd2,ee,ff]
+
+    fig = plt.figure(figsize=(18,14))
+
+    for i,t,colr,u,cm,vals in zip([1,2,3,4],titles,colBars,units,colMaps,varbls):
+        panel=plt.subplot(220+i)
+        getVmap(vals,colr,panel,u,cm)
+        panel.text(0.005,1.03,t,size=15,transform=panel.transAxes)
+    
+    fig.suptitle(r'$\bf{Control\ Case:}$ '+case1+'\n'+\
+                 r'$\bf{Test\ Case:}$ '+case2+'\n'+r'$\bf{Plotting:}$ '+var,\
+                 fontsize=20,horizontalalignment='left',x=0.125,y=0.98)
+    ## Saving figure
+    plt.savefig(str(path)+'/'+var+'_'+ss[ind]+'_lathgt.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
+
+    
 def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,lat,scrip=None,reg='Global',path=None,grid=True):
     if reg!=None:
         lat1,lat2,lon1,lon2=get_latlon(reg)

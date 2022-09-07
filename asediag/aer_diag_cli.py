@@ -6,8 +6,8 @@ from pathlib import Path
 import pkg_resources
 import shutil
 
-from asediag.aerosol_diag_SEgrid import gather_data, get_map, get_all_tables, get_forcing_df
-
+from asediag.aerosol_diag_SEgrid import get_forcing_df, gather_ProfData, get_vert_profiles
+from asediag.aerosol_diag_SEgrid import gather_data, get_map, get_all_tables
 
 def main():
 
@@ -24,6 +24,7 @@ def main():
     parser.add_argument("-loc", help="select location", default=None)
     parser.add_argument("-vlist", help="plot extra variables defined in cli", action='store_true', default=None)
     parser.add_argument("-tab", help="get budget tables", action='store_true', default=None)
+    parser.add_argument("-prof", help="get zonal mean vertical profile plots", action='store_true', default=None)
     parser.add_argument("-forcing", help="get forcing analysis", action='store_true', default=None)
     parser.add_argument("-hplot", help="mute standard horizontal plots", action='store_true', default=None)
     parser.add_argument("-scrip", help="scrip file", \
@@ -39,6 +40,7 @@ def main():
     local = args.loc
     vl = args.vlist
     tb = args.tab
+    profile = args.prof
     hp = args.hplot
     sc = args.scrip
     rf = args.forcing
@@ -118,6 +120,26 @@ def main():
                 p = mp.Process(target=get_map,args=[aa[0][var],bb[0][var],diff[var],rel[var],var,ind,case1,case2,\
                                 aa[1][var],bb[1][var],aa[3],unit,lon.values,lat.values],\
                                kwargs={'scrip':sc,'path':path+'/set02','reg':region})
+                p.start()
+                processes.append(p)
+            for process in processes:
+                process.join()
+    if profile != None:
+        for aer in aer_list[:]:
+            print('getting data\n')
+            print(path1,path2)
+            print('\nProducing profiles can take some time in SE-grid\nbinning data . . .\n')
+            aa=gather_ProfData(path1,aer,case1,model)
+            bb=gather_ProfData(path2,aer,case2,model)
+            aa[0].load()
+            bb[0].load()
+            print('Loaded data\n')
+            diff = bb[0]-aa[0]
+            rel = (diff/abs(aa[0]))*100
+            processes=[]
+            for ind,var in product([0,1,2],aa[1]):
+                p = mp.Process(target=get_vert_profiles,args=[aa[0][var],bb[0][var],diff[var],rel[var],var,ind,case1,case2,\
+                                        ],kwargs={'path':path+'/set01'})
                 p.start()
                 processes.append(p)
             for process in processes:
