@@ -63,13 +63,22 @@ def main():
     ## copying the template content to out dir (i.e. outpath)
     resource_package = __name__
     resource_path = 'template'
+    tmp = pkg_resources.resource_filename(resource_package, resource_path)
     try:
-        tmp = pkg_resources.resource_filename(resource_package, resource_path)
         shutil.copytree(tmp, path)
     except FileExistsError:
         pass
     except:
         print('\nCan not create directory:',tmp)
+    ## Rewriting the frontend here
+    with open(tmp+'/aerosol.html','r') as file:
+        filedata = file.read()
+        filedata = filedata.replace('F20TR_v2_ndg_ERA5_SEdata_NA_RRM',case2)
+        filedata = filedata.replace('F20TR_v2_ndg_ERA5_Defdata_NA_RRM',case1)
+        if (region!=None) and (region!='Global') and (hp==None):
+            filedata = filedata.replace('<p><span class="red">4.</span> <a href="set02RF/index.html">Radiative Forcing analysis</a></p>','<p><span class="red">4.</span> <a href="set02RF/index.html">Radiative Forcing analysis</a></p>\n<p><span class="red">5.</span> <a href="set02'+region+'/index.html">'+region+' Horizontal contour plots</a></p>')
+    with open(path+'/aerosol.html','w') as file:
+        file.write(filedata)
         
     aer_list = ['bc','so4','dst','mom','pom','ncl','soa','num']    
     start = time.perf_counter()
@@ -145,6 +154,7 @@ def main():
             for process in processes:
                 process.join()
     if tb != None:
+        aer_list = ['bc','so4','dst','mom','pom','ncl','soa','num','DMS','SO2','H2SO4']
         print('\nProducing all budget tables')
         for aer in aer_list[:]:
             processes=[]
