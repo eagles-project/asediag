@@ -266,13 +266,18 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam'):
      aer+'_a?'+'SFSIC',aer+'_a?'+'SFSBS',aer+'_a?'+'SFSBC',aer+'_a?'+'SFSES',\
      aer+'_a?'+'SFSEC',aer+'_a?'+'_sfgaex2',aer+'_a?'+'_sfcoag1',aer+'_a?'+'_sfcsiz3',\
      aer+'_a?'+'_sfcsiz4',aer+'_a?'+'_mixnuc1',aer+'_a?'+'AQH2SO4',\
-     aer+'_a?'+'AQSO4',aer+'_a?'+'_sfnnuc1',aer+'_a?']
+     aer+'_a?'+'AQSO4',aer+'_a?'+'_sfnnuc1','AQ_'+aer+'_a?','GS_'+aer+'_a?',aer+'_a?']
     cvariables = [aer+'_c?',aer+'_c?'+'DDF',aer+'_c?'+'SFWET','SF'+aer+'_c?',aer+'_c?'+'_CLXF',\
      aer+'_c?'+'_sfgaex1',aer+'_c?'+'GVF',aer+'_c?'+'TBF',aer+'_c?'+'SFSIS',\
      aer+'_c?'+'SFSIC',aer+'_c?'+'SFSBS',aer+'_c?'+'SFSBC',aer+'_c?'+'SFSES',\
      aer+'_c?'+'SFSEC',aer+'_c?'+'_sfgaex2',aer+'_c?'+'_sfcoag1',aer+'_c?'+'_sfcsiz3',\
      aer+'_c?'+'_sfcsiz4',aer+'_c?'+'_mixnuc1',aer+'_c?'+'AQH2SO4',\
-     aer+'_c?'+'AQSO4',aer+'_c?'+'_sfnnuc1',aer+'_c?']
+     aer+'_c?'+'AQSO4',aer+'_c?'+'_sfnnuc1','AQ_'+aer+'_a?','GS_'+aer+'_a?',aer+'_c?']
+    ## handle gas=phase species
+    gvars = ['SO2','DMS','H2SO4']
+    if aer in gvars:
+        avariables = str(avariables).replace('_a?','').replace("'",'').replace(' ','')[1:-1].replace(aer+'DDF','DF_'+aer).replace(aer+'SFWET','WD_'+aer).split(',')
+        cvariables = ['']*len(cvariables)
     # sfc emis
     df = pd.DataFrame()
     nvar=0
@@ -283,9 +288,9 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam'):
         var_vars = var_avars+var_cvars
         #print(var_vars)
         vdata = data[var_vars]
-        if (avar == aer+'_a?') and (nvar == 1):
+        if ((avar == aer+'_a?') and (nvar == 1)) or ((avar == aer) and (nvar == 1)):
             vars1 = var_vars+[avar+'+'+cvar]
-            if aer == 'so4':
+            if (aer == 'so4') or (aer in gvars):
                 bname = 'Burden (TgS)'
                 srcname = 'Sources (TgS/yr)'
                 snkname = 'Sinks (TgS/yr)'
@@ -300,8 +305,8 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam'):
                 srcname = 'Sources (Tg/yr)'
                 snkname = 'Sinks (Tg/yr)'
                 vdata = get_vertint(vdata,ha,p0,hb,ps,grav,fact)*esfc
-        elif (avar == aer+'_a?') and (nvar > 1):
-            if aer == 'so4':
+        elif ((avar == aer+'_a?') and (nvar > 1)) or ((avar == aer) and (nvar > 1)):
+            if (aer == 'so4') or (aer in gvars):
                 #sfc conc
                 sname = 'Sfc Conc. (ug/m3)'
                 vdata = vdata[dict(lev=-1)].drop_vars('lev')
@@ -322,12 +327,14 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam'):
                     vdata = vdata*factaaa*esfc*factbb
                 elif aer == 'num':
                     vdata = vdata*factaa*esfc*factbb/sum_airmass
-                elif aer == 'so4':
+                elif (aer == 'so4') or (aer in gvars):
                     vdata = vdata*factaa*factcc*esfc
                 else:
                     vdata = vdata*factaa*esfc
+            elif ('WD_' in avar):
+                vdata = vdata*factcc
             else:
-                if aer == 'so4':
+                if (aer == 'so4') or (aer in gvars):
                     vdata = vdata*factcc*esfc
                 elif aer == 'num':
                     vdata = vdata*factbb*esfc/sum_airmass
@@ -360,14 +367,23 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam'):
               'belowcloud, convec.','rain evap, strat.','rain evap, convec.',\
              'renaming (sfgaex2)','coagulation (sfcoag1)','calcsize (sfcsiz3)',\
              'calcsize (sfcsiz4)','dropmixnuc (mixnuc1)','cloudchem (AQH2SO4)',\
-             'cloudchem (AQSO4)','sfnnuc1',sname]
+             'cloudchem (AQSO4)','sfnnuc1','Aq. chem (gas-species)','gas chem/wet dep. (gas-species)',sname]
     df.index=index_list
-    df.columns=df.columns.tolist()[:-1]+[aer]
-    srcsnk = df.loc[['Dry deposition','Wet deposition','renaming (sfgaex2)',\
-                     'coagulation (sfcoag1)','calcsize (sfcsiz3)',\
-                     'calcsize (sfcsiz4)','dropmixnuc (mixnuc1)',\
-                     'condensation-aging','surface emission','elevated emission',\
-                     'cloudchem (AQH2SO4)','cloudchem (AQSO4)','sfnnuc1']][vars1[:-1]+[aer]]
+    listofSS = ['Dry deposition','Wet deposition','renaming (sfgaex2)',\
+                 'coagulation (sfcoag1)','calcsize (sfcsiz3)',\
+                 'calcsize (sfcsiz4)','dropmixnuc (mixnuc1)',\
+                 'condensation-aging','surface emission','elevated emission',\
+                 'cloudchem (AQH2SO4)','cloudchem (AQSO4)','sfnnuc1',\
+                 'Aq. chem (gas-species)','gas chem/wet dep. (gas-species)']
+    
+    if aer in gvars:
+        aer = 'total_'+aer
+        df.columns=df.columns.tolist()[:-1]+[aer]
+        srcsnk = df.loc[listofSS][vars1[:-1]+[aer]]
+    else:
+        df.columns=df.columns.tolist()[:-1]+[aer]
+        srcsnk = df.loc[listofSS[:-2]][vars1[:-1]+[aer]]
+    
     src = srcsnk.where(srcsnk>0).sum()
     snk = srcsnk.where(srcsnk<0).sum()
     df.loc[srcname] = src
@@ -381,7 +397,7 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam'):
                'belowcloud, convec.','rain evap, strat.','rain evap, convec.',\
                'Lifetime (days)','renaming (sfgaex2)','coagulation (sfcoag1)','calcsize (sfcsiz3)',\
                 'calcsize (sfcsiz4)','dropmixnuc (mixnuc1)','cloudchem (AQH2SO4)',\
-                'cloudchem (AQSO4)','condensation-aging'])
+                'cloudchem (AQSO4)','condensation-aging','Aq. chem (gas-species)','gas chem/wet dep. (gas-species)'])
     return df
 
 def get_all_tables(ind,aer,path1,path2,case1,case2,path,reg,loc,mod):
@@ -399,7 +415,7 @@ def get_all_tables(ind,aer,path1,path2,case1,case2,path,reg,loc,mod):
         pd.options.display.float_format = '{:g}'.format
         df = df.applymap(lambda x: rounding(x) if ((abs(x)>1e-5) and (abs(x)<1e5)) else '{:.0e}'.format(x))
         htable = build_table(df,'grey_light',index=True,padding='5px',text_align='right')
-        htable = htable.replace('<thead>','<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto">Control Case:  '+case1+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto">Test Case:  '+case2+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto">Table for:  '+aer+'</caption>\n<thead>')
+        htable = htable.replace('<thead>','<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>Control Case:</strong>  '+case1+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>Test Case:</strong>  '+case2+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>Table for:</strong>  '+aer+'</caption>\n<thead>')
         with open(path+'/'+col+'_'+ss[ind]+'.html','w') as f:
             f.write(htable)
             
