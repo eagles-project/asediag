@@ -369,19 +369,21 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam'):
              'calcsize (sfcsiz4)','dropmixnuc (mixnuc1)','cloudchem (AQH2SO4)',\
              'cloudchem (AQSO4)','sfnnuc1','Aq. chem (gas-species)','gas chem/wet dep. (gas-species)',sname]
     df.index=index_list
-    if aer in gvars:
-        aer = 'total_'+aer
-    df.columns=df.columns.tolist()[:-1]+[aer]
     listofSS = ['Dry deposition','Wet deposition','renaming (sfgaex2)',\
                  'coagulation (sfcoag1)','calcsize (sfcsiz3)',\
                  'calcsize (sfcsiz4)','dropmixnuc (mixnuc1)',\
                  'condensation-aging','surface emission','elevated emission',\
                  'cloudchem (AQH2SO4)','cloudchem (AQSO4)','sfnnuc1',\
                  'Aq. chem (gas-species)','gas chem/wet dep. (gas-species)']
-    if aer.split('_')[1] in gvars:
+    
+    if aer in gvars:
+        aer = 'total_'+aer
+        df.columns=df.columns.tolist()[:-1]+[aer]
         srcsnk = df.loc[listofSS][vars1[:-1]+[aer]]
     else:
+        df.columns=df.columns.tolist()[:-1]+[aer]
         srcsnk = df.loc[listofSS[:-2]][vars1[:-1]+[aer]]
+    
     src = srcsnk.where(srcsnk>0).sum()
     snk = srcsnk.where(srcsnk<0).sum()
     df.loc[srcname] = src
