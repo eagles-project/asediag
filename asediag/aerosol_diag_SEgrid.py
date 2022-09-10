@@ -33,6 +33,48 @@ def rounding(n):
     except:
         return np.nan
 
+def get_html():
+    df = pd.DataFrame()
+    listofvs = ['bc','bc_a1', 'bc_a3', 'bc_a4', 'bc_c1', 'bc_c3', 'bc_c4',\
+               'so4','so4_a1', 'so4_a2', 'so4_a3', 'so4_c1', 'so4_c2', 'so4_c3',\
+               'dst','dst_a1', 'dst_a3', 'dst_c1', 'dst_c3',\
+               'mom','mom_a1', 'mom_a2', 'mom_a3', 'mom_a4', 'mom_c1', 'mom_c2', 'mom_c3', 'mom_c4',\
+               'pom','pom_a1', 'pom_a3', 'pom_a4', 'pom_c1', 'pom_c3', 'pom_c4',\
+               'ncl','ncl_a1', 'ncl_a2', 'ncl_a3', 'ncl_c1', 'ncl_c2', 'ncl_c3',\
+               'soa','soa_a1', 'soa_a2', 'soa_a3', 'soa_c1', 'soa_c2', 'soa_c3',\
+               'num','num_a1', 'num_a2', 'num_a3', 'num_a4', 'num_c1', 'num_c2', 'num_c3', 'num_c4',\
+               'SO2','DMS','H2SO4']
+    spfull = {'bc':'<font color="red"><strong>Black Carbon</string></font>','so4':'<font color="red"><strong>Sulfate</string></font>','dst':'<font color="red"><strong>Dust</string></font>','mom':'<font color="red"><strong>Marine organic matter</string></font>',\
+             'pom':'<font color="red"><strong>Primary organic matter</string></font>','ncl':'<font color="red"><strong>Sea salt</string></font>','soa':'<font color="red"><strong>Secondary organic aerosol</string></font>',\
+             'num':'<font color="red"><strong>Aerosol number</string></font>',\
+             'SO2':'<font color="red"><strong>SO2</string></font>',\
+             'DMS':'<font color="red"><strong>DMS</string></font>',\
+             'H2SO4':'<font color="red"><strong>H2SO4</string></font>'}
+    df['Variable']=listofvs
+    df['ANN']=df['Variable'].apply(lambda x: '<a href="{}_ANN.html">ANN</a>'.format(x))
+    df['DJF']=df['Variable'].apply(lambda x: '<a href="{}_DJF.html">DJF</a>'.format(x))
+    df['JJA']=df['Variable'].apply(lambda x: '<a href="{}_JJA.html">JJA</a>'.format(x))
+    df['Variable']=df['Variable'].map(spfull).fillna(df['Variable'])
+    styler = df.style
+    styler=styler.set_caption('Aerosol budget').set_table_styles([
+        {'selector':'caption',
+        'props':[
+            ('font-weight','bold'),
+            ('font-size','2.5em'),
+            ('padding-bottom','1em'),
+            ('text-align','center'),
+            ('border-width','0.5em')]},
+        {'selector':'th.col_heading',
+        'props':[
+            ('font-size','1.5em'),
+            ('padding-bottom','1em')]}
+    ])
+
+    html = (
+        styler.set_properties(**{'font-size':'12pt','font-family':'calibri','width':'12em','text-align':'center','padding-bottom':'1em'}).hide_index().render()
+    )
+    return html
+
 def get_crange(v1,v2):
     aagg = (np.max(v1.values)+np.max(v2.values))/2
     aagg = np.log10(aagg)
@@ -357,7 +399,9 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam'):
         mean = (vdatalatlon*arealatlon).sum(['ncol'])/(arealatlon).sum(['ncol'])
         rvars = dict(zip(prob_list+[avar+'+'+cvar],vars1))
         mean = mean.rename_vars(rvars)
-        if (('DDF' in avar) or ('GVF' in avar) or ('TBF' in avar)):
+        if (('DDF' in avar) or ('GVF' in avar) or ('TBF' in avar) or ('DF_' in avar)):
+            mean = -1*mean
+        if ((aer == 'SO2') and ('GS_' in avar)):
             mean = -1*mean
         ndf=mean.expand_dims(dim='vars').to_dataframe()
         df=pd.concat([df,ndf.replace(0, np.nan)])

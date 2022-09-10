@@ -7,7 +7,7 @@ import pkg_resources
 import shutil
 
 from asediag.aerosol_diag_SEgrid import get_forcing_df, gather_ProfData, get_vert_profiles
-from asediag.aerosol_diag_SEgrid import gather_data, get_map, get_all_tables
+from asediag.aerosol_diag_SEgrid import gather_data, get_map, get_all_tables, get_html
 
 def main():
 
@@ -156,6 +156,9 @@ def main():
     if tb != None:
         aer_list = ['bc','so4','dst','mom','pom','ncl','soa','num','DMS','SO2','H2SO4']
         print('\nProducing all budget tables')
+        html = get_html()
+        with open(path+'/tables/index.html','w') as file:
+            file.write(html)
         for aer in aer_list[:]:
             processes=[]
             for ind in [0,1,2]:
