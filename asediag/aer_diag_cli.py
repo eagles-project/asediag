@@ -84,6 +84,7 @@ def main():
     start = time.perf_counter()
     # if __name__ == '__main__':
     if hp == None:
+        aer_list = ['bc','so4','dst','mom','pom','ncl','soa','num','DMS','SO2','H2SO4']
         for aer in aer_list[:]:
             print('getting data\n')
             print(path1,path2)
