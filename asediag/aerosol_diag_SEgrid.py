@@ -223,9 +223,14 @@ def get_vplots(path,case,ts,aer,mod='eam'):
         fact = factbb
     ## all variable list
     vlist = list(data.variables.keys())
-    # Total BC burden
-    var_avars = fnmatch.filter(vlist,aer+'_a?')
-    var_cvars = fnmatch.filter(vlist,aer+'_c?')
+    ## get list of available variables
+    gvars = ['SO2','DMS','H2SO4']
+    if aer in gvars:
+        var_avars = fnmatch.filter(vlist,aer)
+        var_cvars = []
+    else:
+        var_avars = fnmatch.filter(vlist,aer+'_a?')
+        var_cvars = fnmatch.filter(vlist,aer+'_c?')
     var_vars = var_avars+var_cvars
     print(var_vars)
     vdata = data[var_vars]

@@ -134,6 +134,7 @@ def main():
             for process in processes:
                 process.join()
     if profile != None:
+        aer_list = ['bc','so4','dst','mom','pom','ncl','soa','num','DMS','SO2','H2SO4']
         html = get_html("season_lathgt.png","Vertical contour plots of zonal means")
         with open(path+'/set01/index.html','w') as file:
             file.write(html)
