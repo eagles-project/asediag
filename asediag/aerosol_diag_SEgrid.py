@@ -474,7 +474,7 @@ def get_all_tables(ind,aer,path1,path2,case1,case2,path,reg,loc,mod):
         pd.options.display.float_format = '{:g}'.format
         df = df.applymap(lambda x: rounding(x) if ((abs(x)>1e-5) and (abs(x)<1e5)) else '{:.0e}'.format(x))
         htable = build_table(df,'grey_light',index=True,padding='5px',text_align='right')
-        htable = htable.replace('<thead>','<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>Control Case:</strong>  '+case1+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>Test Case:</strong>  '+case2+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>Table for:</strong>  '+aer+'</caption>\n<thead>')
+        htable = htable.replace('<thead>','<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>CNTL:</strong>  '+case1+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>TEST:</strong>  '+case2+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>VRBL:</strong>  '+aer+'</caption>\n<thead>')
         with open(path+'/'+col+'_'+ss[ind]+'.html','w') as f:
             f.write(htable)
             
@@ -808,8 +808,8 @@ def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,l
         panel.text(0.005,1.03,t,size=15,transform=panel.transAxes)
         panel.text(0.8,1.03, 'mean: '+'{:0.2e}'.format(m),size=15,transform=panel.transAxes)
     
-    fig.suptitle(r'$\bf{Control\ Case:}$ '+case1+'\n'+\
-                 r'$\bf{Test\ Case:}$ '+case2+'\n'+r'$\bf{Plotting:}$ '+var,\
+    fig.suptitle(r'$\bf{CNTL:}$ '+case1+'\n'+\
+                 r'$\bf{TEST:}$ '+case2+'\n'+r'$\bf{VRBL:}$ '+var,\
                  fontsize=20,horizontalalignment='left',x=0.125,y=0.96)
     ## Saving figure
     plt.savefig(str(path)+'/'+var+'_'+ss[ind]+'_latlon_'+pval+'.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
