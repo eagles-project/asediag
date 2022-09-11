@@ -237,8 +237,11 @@ def get_vplots(path,case,ts,aer,mod='eam'):
     dd=vdata.to_dataframe()
     dd=dd.drop(columns=['season'])
     dd['lat']=all_ll
-    print(dd.columns)
-    vdata=dd.groupby(['lev','lat']).mean().to_xarray()
+    dd=dd.groupby(['lev','lat']).mean()
+    ## resampling to lower res (2 deg)
+    dd = dd.rolling(2).mean()
+    dd = dd.iloc[::2,:]
+    vdata=dd.to_xarray()
     return vdata,var_vars+[aer]
 
 def get_singleV_hplots(path,case,ts,var,fact=1,vertinit=None,pval='radiation',mod='eam'):
@@ -712,7 +715,6 @@ def getVmap(data,ranges,ax,unit,cm):
     s2 = s1.applymap(lambda x: rounding(x) if ((abs(x)>1e-5) and (abs(x)<1e5)) else '{:.0e}'.format(x))[0].tolist()
     cbar_ticks=list(map(str,s2))
     cbar_ticks = [i.rstrip('0').rstrip('.') for i in cbar_ticks]
-    #cbar_ticks=list(map(str,ranges))
     cbar.ax.set_yticklabels(['']+cbar_ticks[1:-1]+[''],size=12)
     cbar.set_label(label=unit,size=12)
     cbar.outline.set_linewidth(1.5)
