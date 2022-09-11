@@ -134,6 +134,9 @@ def main():
             for process in processes:
                 process.join()
     if profile != None:
+        html = get_html("season_lathgt.png","Vertical contour plots of zonal means")
+        with open(path+'/set01/index.html','w') as file:
+            file.write(html)
         for aer in aer_list[:]:
             print('getting data\n')
             print(path1,path2)
@@ -156,7 +159,7 @@ def main():
     if tb != None:
         aer_list = ['bc','so4','dst','mom','pom','ncl','soa','num','DMS','SO2','H2SO4']
         print('\nProducing all budget tables')
-        html = get_html()
+        html = get_html("season.html","Aerosol budget")
         with open(path+'/tables/index.html','w') as file:
             file.write(html)
         for aer in aer_list[:]:

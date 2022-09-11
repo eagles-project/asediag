@@ -33,7 +33,7 @@ def rounding(n):
     except:
         return np.nan
 
-def get_html():
+def get_html(form,title):
     df = pd.DataFrame()
     listofvs = ['bc','bc_a1', 'bc_a3', 'bc_a4', 'bc_c1', 'bc_c3', 'bc_c4',\
                'so4','so4_a1', 'so4_a2', 'so4_a3', 'so4_c1', 'so4_c2', 'so4_c3',\
@@ -44,19 +44,20 @@ def get_html():
                'soa','soa_a1', 'soa_a2', 'soa_a3', 'soa_c1', 'soa_c2', 'soa_c3',\
                'num','num_a1', 'num_a2', 'num_a3', 'num_a4', 'num_c1', 'num_c2', 'num_c3', 'num_c4',\
                'SO2','DMS','H2SO4']
-    spfull = {'bc':'<font color="red"><strong>Black Carbon</string></font>','so4':'<font color="red"><strong>Sulfate</string></font>','dst':'<font color="red"><strong>Dust</string></font>','mom':'<font color="red"><strong>Marine organic matter</string></font>',\
+    spfull = {'bc':'<a id="Black Carbon"><font color="red"><strong>Black Carbon</string></font>','so4':'<a id="Sulfate"><font color="red"><strong>Sulfate</string></font>','dst':'<font color="red"><strong>Dust</string></font>','mom':'<font color="red"><strong>Marine organic matter</string></font>',\
              'pom':'<font color="red"><strong>Primary organic matter</string></font>','ncl':'<font color="red"><strong>Sea salt</string></font>','soa':'<font color="red"><strong>Secondary organic aerosol</string></font>',\
-             'num':'<font color="red"><strong>Aerosol number</string></font>',\
+             'num':'<a id="Aerosol number"><font color="red"><strong>Aerosol number</string></font>',\
              'SO2':'<font color="red"><strong>SO2</string></font>',\
              'DMS':'<font color="red"><strong>DMS</string></font>',\
              'H2SO4':'<font color="red"><strong>H2SO4</string></font>'}
     df['Variable']=listofvs
-    df['ANN']=df['Variable'].apply(lambda x: '<a href="{}_ANN.html">ANN</a>'.format(x))
-    df['DJF']=df['Variable'].apply(lambda x: '<a href="{}_DJF.html">DJF</a>'.format(x))
-    df['JJA']=df['Variable'].apply(lambda x: '<a href="{}_JJA.html">JJA</a>'.format(x))
+    df['DJF']=df['Variable'].apply(lambda x: '<a href="{}_{}">DJF</a>'.format(x,form.replace('season','DJF')))
+    df['JJA']=df['Variable'].apply(lambda x: '<a href="{}_{}">JJA</a>'.format(x,form.replace('season','JJA')))
+    df['ANN']=df['Variable'].apply(lambda x: '<a href="{}_{}">ANN</a>'.format(x,form.replace('season','ANN')))
     df['Variable']=df['Variable'].map(spfull).fillna(df['Variable'])
+    df.columns = ['Variable','','Seasons',' ']
     styler = df.style
-    styler=styler.set_caption('Aerosol budget').set_table_styles([
+    styler=styler.set_caption(title).set_table_styles([
         {'selector':'caption',
         'props':[
             ('font-weight','bold'),
@@ -73,6 +74,7 @@ def get_html():
     html = (
         styler.set_properties(**{'font-size':'12pt','font-family':'calibri','width':'12em','text-align':'center','padding-bottom':'1em'}).hide_index().render()
     )
+    html=html.replace('</caption>','</caption>  <caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding-left: 2.5em"></caption>')
     return html
 
 def get_crange(v1,v2):
