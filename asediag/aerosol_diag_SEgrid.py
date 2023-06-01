@@ -688,11 +688,17 @@ def forcing_plots(plot_vars,path,area,season,plane,lon1,lon2,lat1,lat2,scrip):
     i=1
     for var,t,l in zip(plot_vars,titles,labels):
         ax=plt.subplot(5,3,0+i,projection=crs.PlateCarree())
-        m=(var*area).sum(['ncol'])/(area).sum(['ncol'])
-        get_plots( var,ax=ax,cmap=BlueWhiteOrangeRed_map,levels=rr,\
-                     scrip_file=scrip,gridLines=False,\
-                        lon_range=[lon1,lon2], lat_range=[lat1,lat2],
-                        unit='[W m$^{-2}$]').get_map()
+        m=(var*area).sum(area.dims)/(area).sum(area.dims)
+        try:
+            get_plots( var,ax=ax,cmap=BlueWhiteOrangeRed_map,levels=rr,\
+                         scrip_file=scrip,gridLines=False,\
+                            lon_range=[lon1,lon2], lat_range=[lat1,lat2],
+                            unit='[W m$^{-2}$]').get_map()
+        except:
+            get_plots( var,ax=ax,cmap=BlueWhiteOrangeRed_map,levels=rr,\
+                         scrip_file='',gridLines=False,\
+                            lon_range=[lon1,lon2], lat_range=[lat1,lat2],
+                            unit='[W m$^{-2}$]').get_map()
         ax.text(0.005,1.03,t,size=12,transform=ax.transAxes)
         ax.text(0.89,1.03, '{:0.3f}'.format(m.values),size=12,transform=ax.transAxes)
         ax.text(0.05,0.95,l,size=12,transform=ax.transAxes,va='top',bbox={'facecolor':'white','pad':1,'edgecolor':'none'})
@@ -751,7 +757,7 @@ def get_forcings(datadef,datase,lon,lat,area,path,season,scrip,reg=None,loc=None
     for vdata in all_vars:
         vdatalatlon = vdata.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2))
         arealatlon = area.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2))
-        mean = (vdatalatlon*arealatlon).sum(['ncol'])/(arealatlon).sum(['ncol'])
+        mean = (vdatalatlon*arealatlon).sum(arealatlon.dims)/(arealatlon).sum(arealatlon.dims)
         all_means.append(mean.values)
     #########
     #########
@@ -795,7 +801,7 @@ def get_forcings(datadef,datase,lon,lat,area,path,season,scrip,reg=None,loc=None
     for vdata in all_vars:
         vdatalatlon = vdata.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2))
         arealatlon = area.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2))
-        mean = (vdatalatlon*arealatlon).sum(['ncol'])/(arealatlon).sum(['ncol'])
+        mean = (vdatalatlon*arealatlon).sum(arealatlon.dims)/(arealatlon).sum(arealatlon.dims)
         all_means.append(mean.values)   
     return all_means
 
@@ -803,10 +809,33 @@ def get_forcings(datadef,datase,lon,lat,area,path,season,scrip,reg=None,loc=None
 def get_forcing_df(path1,path2,case1,case2,path,season='ANN',mod='eam',\
                    regions=['Global','SH_pole','SH_midlat','Tropics','NH_midlat','NH_pole'],\
                    scrip='/compyfs/www/hass877/share/emis_data/DECK120_to_SE/northamericax4v1pg2_scrip.nc'):
-    datadef = xr.open_mfdataset(path1+case1+'.'+mod+'.'+season+'.*_climo.nc')
-    datase = xr.open_mfdataset(path2+case2+'.'+mod+'.'+season+'.*_climo.nc')
-    lon = datase['lon']
+    
+    try:
+        datadef = xr.open_mfdataset(path1+case1+'.'+mod+'.'+season+'.*_climo.nc')
+        lon = datadef['lon'].values
+        lon[lon > 180.] -= 360.
+    except:
+        datadef = xr.open_mfdataset(path1+case1+'*'+season+'*_climo.nc').isel(time=0)
+        lon = xr.where(datadef.lon > 180,datadef.lon-360,datadef.lon)
+        lon = lon.assign_coords(lon=lon.values)
+        datadef['lon'] = lon
+        lon = lon.sortby(lon)
+        datadef = datadef.sortby('lon')
+    
+    try:
+        datase = xr.open_mfdataset(path2+case2+'.'+mod+'.'+season+'.*_climo.nc')
+        lon = datase['lon'].values
+        lon[lon > 180.] -= 360.
+    except:
+        datase = xr.open_mfdataset(path2+case2+'*'+season+'*_climo.nc').isel(time=0)
+        lon = xr.where(datase.lon > 180,datase.lon-360,datase.lon)
+        lon = lon.assign_coords(lon=lon.values)
+        datase['lon'] = lon
+        lon = lon.sortby(lon)
+        datase = datase.sortby('lon')
+        
     lat = datase['lat']
+    
     varlist=['AODVIS','FSNT','FLNT','FSNTC','FLNTC','FSNT_d1','FLNT_d1',\
              'FSNTC_d1','FLNTC_d1','FSNS','FLNS','FSNSC','FLNSC','FSNS_d1',\
              'FLNS_d1','FSNSC_d1','FLNSC_d1']
