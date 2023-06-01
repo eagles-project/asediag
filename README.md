@@ -15,14 +15,15 @@ git clone git@github.com:TaufiqHassan/asediag.git
 
 ### Submit as a batch job
 
-`asediag` works with e3sm_unifed environment
+`asediag` works with e3sm_unifed environment in compy and cori.
 
-Make adjustments in the batch configuration file `batch_config.ini`
+Make adjustments in the batch configuration file `batch_config.ini` following the comments.
 
 ```bash
 ## Config file for running all batch scripts on different nodes
 [BATCH]
 account = esmd
+## Since the diagnostics take 15-30 min, the short/debug partition works with minimal/no queue time
 partition = short
 
 [ENV]
@@ -32,8 +33,6 @@ source = /share/apps/E3SM/conda_envs/load_latest_e3sm_unified_compy.sh
 ## if using a user specific environment, source conda and activate user environment (env = work)
 ## Otherwise, keep as is.
 env =
-## compy source: /share/apps/E3SM/conda_envs/base/etc/profile.d/conda.sh
-## Cori source: /global/common/software/e3sm/anaconda_envs/base/etc/profile.d/conda.sh
 
 [CMD]
 ## asediag directory
@@ -61,6 +60,12 @@ walltime = 00:15:00
 ## For lat-lon keep as is
 scrip_file = /compyfs/www/hass877/share/emis_data/DECK120_to_SE/ne30pg2_SCRIP.nc
 ## Available diags options: latlon,tables,extra,forcings,surface,200,500,850,zonal
+## Each diag option will be submitted to a different node
 diags = latlon,tables,extra,forcings,surface,200,500,850,zonal
 ## Run this config by: python submit_asediag_batches.py
+```
+
+Submit the batch jobs with:
+```bash
+python submit_asediag_batches.py
 ```
