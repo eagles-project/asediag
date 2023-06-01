@@ -4,121 +4,143 @@ import matplotlib.pyplot as plt
 import xarray as xr
 import cartopy.crs as crs
 import cartopy.feature as cfeature
-import cmaps
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from matplotlib.collections import PolyCollection
+from matplotlib.colors import ListedColormap
 import pandas as pd
+# from SCRIP_corners import get_scrip_info
 
 def rounding(n):
-    try:
-        sgn = -1 if n<0 else 1
-        num = format(abs(n)-int(abs(n)),'f')
-        if int(num[2:])<1:
-            d = (abs(n))
-            return sgn * d
-        else:
-            for i,e in enumerate(num[2:]):
-                if e!= '0':
-                    if i==0:
-                        d = int(abs(n)) + float(num[:i+5])
-                    else:
-                        d = int(abs(n)) + float(num[:i+4])
-                    return sgn * d
-    except:
-        return np.nan
+    if (type(n)==str) or (np.isnan(n)):
+        return str('-')
+    elif ((abs(n)>1e-5) and (abs(n)<1e5)):
+        try:
+            sgn = '-' if n<0 else ''
+            num = format(abs(n)-int(abs(n)),'f')
+            if int(num[2:])<1:
+                d = str((abs(n)))
+                return sgn + d
+            else:
+                for i,e in enumerate(num[2:]):
+                    if e!= '0':
+                        if i==0:
+                            d = str(int(abs(n))) + (num[1:i+5])
+                        else:
+                            d = str(int(abs(n))) + (num[1:i+4])
+                        return sgn+d
+        except:
+            return '-'
+    else:
+        return '{:.0e}'.format(n)
+
     
 class get_plots(object):
     
     def __init__(self,var,ax,**kwargs):
         self.var = var
         self.ax = ax
+        self.xint = kwargs.get('xint',None)
+        self.yint = kwargs.get('yint',None)
         self.figsize = kwargs.get('figsize',None)
         self.scrip_file = kwargs.get('scrip_file',None)
         self.lat_range = kwargs.get('lat_range',[-90,90])
         self.lon_range = kwargs.get('lon_range',[-180,180])
-        self.cm = kwargs.get('cmap',cmaps.amwg256)
+        self.cm = kwargs.get('cmap',plt.cm.jet)
         self.labelsize = kwargs.get('labelsize',13)
         self.unit = kwargs.get('unit','unit')
         self.gridLines = kwargs.get('gridLines',True)
+        self.colbar = kwargs.get('colbar',True)
         self.map_proj = kwargs.get('projection',crs.PlateCarree())
+        self.res = kwargs.get('res','110m')
+        self.cbs = kwargs.get('cbs',0)
+        self.cbe = kwargs.get('cbe',-1)
+        self.cbi = kwargs.get('cbi',1)
+        self.verts = kwargs.get('verts',None)
         self.rr = kwargs.get('levels',[0.,0.000274,0.00307,0.0214,0.0793,.198,.392,.682,1.13,5.,10.,32.9])
     
         
     def get_verts(self):
+        # try:
+        #     corner_lon,corner_lat,center_lon,center_lat = get_scrip_info(self.scrip_file,nc=True)
+        # except:
         ds_scrip=xr.open_dataset(self.scrip_file)
         corner_lon = np.copy( ds_scrip.grid_corner_lon.values )
         corner_lat = np.copy( ds_scrip.grid_corner_lat.values )
         center_lon = np.copy( ds_scrip.grid_center_lon.values )
-        if ( (np.min(self.lon_range) < 0) & (np.max(corner_lon) > 180) ):
+        if ((np.min(self.lon_range) < 0) & (np.max(corner_lon) > 180)):
             corner_lon[corner_lon > 180.] -= 360.
         
-        lons_corners = np.copy( corner_lon.reshape( corner_lon.shape[0],
-                                                      corner_lon.shape[1],1) )
-        lats_corners = np.copy( corner_lat.reshape( corner_lat.shape[0],
-                                                              corner_lat.shape[1],1) )
-        lons_corners[ lons_corners > 180. ] -= 360
-        center_lon[ center_lon > 180. ] -= 360
+        lons_corners = np.copy(corner_lon.reshape(corner_lon.shape[0],corner_lon.shape[1],1))
+        lats_corners = np.copy(corner_lat.reshape(corner_lat.shape[0],corner_lat.shape[1],1))
+        lons_corners[lons_corners > 180.] -= 360
+        center_lon[center_lon > 180.] -= 360
         
-        lons_corners_add = []
-        lats_corners_add = []
-        var_add = []
-        # For longitudes -180, 180
-        for i, cenlon in enumerate( center_lon ):
-            lon_maxmin = np.max( lons_corners[i,:,:] ) - \
-                         np.min( lons_corners[i,:,:] )
-            if ( lon_maxmin > 180 ):
-                if np.mean( lons_corners[i,:,:] ) <= 0:  
-                    inds2 = np.where( lons_corners[i,:,:] < 0)[0]
-                    tmp_lons_corners = np.copy( lons_corners[i,:] )
-                    tmp_lons_corners[inds2] = 180.
-                    lons_corners_add.append( tmp_lons_corners )
-                    lats_corners_add.append( lats_corners[i,:] )
+        lon_maxmin = np.max(lons_corners,axis=(1,2)) - np.min(lons_corners,axis=(1,2))
+        g180 = np.where(lon_maxmin>180)[0]
+        g180l0 = np.where(np.mean(lons_corners[g180],axis=(1,2)) <= 0)[0]
+        tmp_lons_corners = lons_corners[g180[g180l0]].copy()
+        tmp_lons_corners = np.where(lons_corners[g180[g180l0]]<0,180,tmp_lons_corners)
+        lons_corners = np.append(lons_corners,tmp_lons_corners,axis=0)
+        lats_corners = np.append(lats_corners,lats_corners[g180[g180l0]],axis=0)
+        lons_corners[g180[g180l0]] = np.where(lons_corners[g180[g180l0]]>0,-180,lons_corners[g180[g180l0]])
+        self.var = np.append(self.var,self.var[g180[g180l0]],axis=0)
         
-                    inds = np.where( lons_corners[i,:,:] > 0 )[0]
-                    lons_corners[i,inds] = -180.
-                    
-                    var_add.append( self.var[i] )
-        
-                elif np.mean( lons_corners[i,:,:] ) > 0:
-                    inds2 = np.where( lons_corners[i,:,:] > 0)[0]
-                    tmp_lons_corners = np.copy( lons_corners[i,:] )
-                    tmp_lons_corners[inds2] = -180.
-                    lons_corners_add.append( tmp_lons_corners )
-                    lats_corners_add.append( lats_corners[i,:] )                     
-                    
-                    inds = np.where( lons_corners[i,:,:] < 0 )[0]
-                    lons_corners[i,inds] = 180.
-        
-                    var_add.append( self.var[i] )        
-        lons_corners = np.concatenate( (lons_corners, np.array(lons_corners_add)), axis=0 )
-        lats_corners = np.concatenate( (lats_corners, np.array(lats_corners_add)), axis=0 )
-        self.var = np.concatenate( (self.var, np.array(var_add)), axis=0 )        
-        verts = np.concatenate( ( lons_corners, lats_corners ), axis=2)
+        g180g0 = np.where(np.mean(lons_corners[g180],axis=(1,2)) > 0)[0]
+        tmp_lons_corners = lons_corners[g180[g180g0]].copy()
+        tmp_lons_corners = np.where(lons_corners[g180[g180g0]]>0,-180,tmp_lons_corners)
+        lons_corners = np.append(lons_corners,tmp_lons_corners,axis=0)
+        lats_corners = np.append(lats_corners,lats_corners[g180[g180g0]],axis=0)
+        lons_corners[g180[g180g0]] = np.where(lons_corners[g180[g180g0]]<0,180,lons_corners[g180[g180g0]])
+        self.var = np.append(self.var,self.var[g180[g180g0]],axis=0)
+
+        verts = np.concatenate((lons_corners, lats_corners), axis=2)
+            
         return self.var, verts
         
     def get_map(self):
-        var, verts = self.get_verts()
         kwd_polycollection = {}
+        kwd_pcolormesh = {}
         if self.gridLines == True:
             kwd_polycollection['edgecolor'] = 'k'
             kwd_polycollection['lw'] = 0.05
+            kwd_pcolormesh['edgecolors'] = 'k'
+            kwd_pcolormesh['lw'] = 0.01
         plt.rcParams['font.family'] = 'STIXGeneral'
         ## levels
         ranges=self.rr
         self.ax.set_global()
-        im = PolyCollection(verts,cmap=self.cm,**kwd_polycollection,\
-                           norm=matplotlib.colors.BoundaryNorm(boundaries=ranges, ncolors=256) )
-        im.set_array(var)
-        self.ax.add_collection(im)
+        clen=len(np.arange(0,257)[self.cbs:self.cbe:self.cbi])
+        try:
+            self.cm = ListedColormap(self.cm.colors[self.cbs:self.cbe:self.cbi])
+        except:
+            self.cm = self.cm
+            print('Cannot subscript Segmented Colormap!')
+        if ('.nc' in str(self.scrip_file)) | (type(self.scrip_file)==int):
+            var, verts = self.get_verts()
+            im = PolyCollection(verts,cmap=self.cm,**kwd_polycollection,\
+                               norm=matplotlib.colors.BoundaryNorm(boundaries=ranges, ncolors=clen) )
+            im.set_array(var)
+            self.ax.add_collection(im)
+        else:
+            try:
+                lon = self.var.lon
+                lat = self.var.lat
+            except:
+                lon = self.var.longitude
+                lat = self.var.latitude
+            im = self.ax.pcolormesh(lon, lat, self.var, cmap=self.cm, transform=self.map_proj, \
+                                    **kwd_pcolormesh, norm=matplotlib.colors.BoundaryNorm(boundaries=ranges, ncolors=clen) )
         
         self.ax.set_xlim(self.lon_range)
-        xint = np.around((self.lon_range[1]-self.lon_range[0])/6)
-        xticklabels=np.arange(self.lon_range[0],self.lon_range[1]+xint,xint)
+        if self.xint == None:
+            self.xint = np.around((self.lon_range[1]-self.lon_range[0])/6)
+        xticklabels=np.arange(self.lon_range[0],self.lon_range[1]+self.xint,self.xint)
         self.ax.set_ylim(self.lat_range)
-        yint = np.around((self.lat_range[1]-self.lat_range[0])/6)
-        yticklabels=np.arange(self.lat_range[0],self.lat_range[1]+yint,yint)
-        self.ax.coastlines(resolution='110m',lw=0.5,edgecolor='k')
-        self.ax.add_feature(cfeature.BORDERS.with_scale('110m'),lw=0.5,edgecolor='k')
+        if self.yint == None:
+            self.yint = np.around((self.lat_range[1]-self.lat_range[0])/6)
+        yticklabels=np.arange(self.lat_range[0],self.lat_range[1]+self.yint,self.yint)
+        self.ax.coastlines(resolution=self.res,lw=0.5,edgecolor='k')
+        self.ax.add_feature(cfeature.BORDERS.with_scale(self.res),lw=0.5,edgecolor='k')
         self.ax.set_xticks(xticklabels,crs=self.map_proj)
         self.ax.set_yticks(yticklabels,crs=self.map_proj)
         self.ax.tick_params(labelsize=self.labelsize)
@@ -133,9 +155,14 @@ class get_plots(object):
         fig = self.ax.figure
         ## rounding the colorbar ticks
         s1 = pd.DataFrame(ranges)
-        s2 = s1.applymap(lambda x: rounding(x) if ((abs(x)>1e-5) and (abs(x)<1e5)) else '{:.0e}'.format(x))[0].tolist()
+        s2 = s1.applymap(lambda x: rounding(x))[0].tolist()
         cbar_ticks=list(map(str,s2))
-        cbar_ticks = [i.rstrip('0').rstrip('.') for i in cbar_ticks]
+        cbar_ticks = [i.replace('.0','') if i[-2:]=='.0' else i for i in cbar_ticks]
+        if len(cbar_ticks) > 12:
+            cbar_ticks[::2]=['']*len(cbar_ticks[::2])
+        else:
+            cbar_ticks[0]=''
+            cbar_ticks[-1]=''
         ## Dynamic page size depending on the lat/lon ranges or panel size
         if self.figsize != None:
             positions = self.ax.get_position()
@@ -156,11 +183,15 @@ class get_plots(object):
                 plt.draw()
 
         positions = self.ax.get_position()
-        cax = fig.add_axes([positions.x0,positions.y0-0.06,positions.x1-positions.x0,0.02])
-        cbar = fig.colorbar(im,cax=cax,orientation='horizontal',ticks=ranges,extend='neither',fraction=0.08)
-        cbar.ax.set_xticklabels(cbar_ticks, size=self.labelsize )
-        cbar.set_label(label=self.unit,size=self.labelsize)
+        if self.colbar==True:
+            cax = fig.add_axes([positions.x0,positions.y0-0.06,positions.x1-positions.x0,0.02])
+            cbar = fig.colorbar(im,cax=cax,orientation='horizontal',ticks=ranges,extend='neither',fraction=0.08,drawedges=True)
+            cbar.ax.set_xticklabels(cbar_ticks, size=self.labelsize )
+            cbar.set_label(label=self.unit,size=self.labelsize)
+            cbar.outline.set_linewidth(1.5)
+            cbar.dividers.set_linewidth(1.5)
         ## panel box thickness
         plt.setp(self.ax.spines.values(),lw=1.5)
+        return im
 
         

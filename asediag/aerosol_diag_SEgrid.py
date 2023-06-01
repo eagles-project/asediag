@@ -5,33 +5,113 @@ import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import cartopy.crs as crs
-import cmaps
+from asediag.nclCols import amwg256_map, BlueWhiteOrangeRed_map
 from asediag.aerdiag_plots import get_plots
 import matplotlib
 import fnmatch
 from pathlib import Path
 import pandas as pd
-from pretty_html_table import build_table
+from matplotlib.colors import ListedColormap
 
 ##########################################################################
 ##########################################################################
 def rounding(n):
-    try:
-        sgn = -1 if n<0 else 1
-        num = format(abs(n)-int(abs(n)),'f')
-        if int(num[2:])<1:
-            d = (abs(n))
-            return sgn * d
-        else:
-            for i,e in enumerate(num[2:]):
-                if e!= '0':
-                    if i==0:
-                        d = int(abs(n)) + float(num[:i+5])
-                    else:
-                        d = int(abs(n)) + float(num[:i+4])
-                    return sgn * d
-    except:
-        return np.nan
+    if (type(n)==str) or (np.isnan(n)):
+        return str('-')
+    elif ((abs(n)>1e-5) and (abs(n)<1e5)):
+        try:
+            sgn = '-' if n<0 else ''
+            num = format(abs(n)-int(abs(n)),'f')
+            if int(num[2:])<1:
+                d = str((abs(n)))
+                return sgn + d
+            else:
+                for i,e in enumerate(num[2:]):
+                    if e!= '0':
+                        if i==0:
+                            d = str(int(abs(n))) + (num[1:i+5])
+                        else:
+                            d = str(int(abs(n))) + (num[1:i+4])
+                        return sgn+d
+        except:
+            return '-'
+    else:
+        return '{:.0e}'.format(n)
+
+def get_html(form,title):
+    df = pd.DataFrame()
+    listofvs = ['bc','bc_a1', 'bc_a3', 'bc_a4', 'bc_c1', 'bc_c3', 'bc_c4',\
+               'so4','so4_a1', 'so4_a2', 'so4_a3', 'so4_c1', 'so4_c2', 'so4_c3',\
+               'dst','dst_a1', 'dst_a3', 'dst_c1', 'dst_c3',\
+               'mom','mom_a1', 'mom_a2', 'mom_a3', 'mom_a4', 'mom_c1', 'mom_c2', 'mom_c3', 'mom_c4',\
+               'pom','pom_a1', 'pom_a3', 'pom_a4', 'pom_c1', 'pom_c3', 'pom_c4',\
+               'ncl','ncl_a1', 'ncl_a2', 'ncl_a3', 'ncl_c1', 'ncl_c2', 'ncl_c3',\
+               'soa','soa_a1', 'soa_a2', 'soa_a3', 'soa_c1', 'soa_c2', 'soa_c3',\
+               'num','num_a1', 'num_a2', 'num_a3', 'num_a4', 'num_c1', 'num_c2', 'num_c3', 'num_c4',\
+               'SO2','DMS','H2SO4']
+    spfull = {'bc':'<a id="Black Carbon"><font color="red"><strong>Black Carbon</string></font>','so4':'<a id="Sulfate"><font color="red"><strong>Sulfate</string></font>','dst':'<font color="red"><strong>Dust</string></font>','mom':'<font color="red"><strong>Marine organic matter</string></font>',\
+             'pom':'<font color="red"><strong>Primary organic matter</string></font>','ncl':'<font color="red"><strong>Sea salt</string></font>','soa':'<font color="red"><strong>Secondary organic aerosol</string></font>',\
+             'num':'<a id="Aerosol number"><font color="red"><strong>Aerosol number</string></font>',\
+             'SO2':'<font color="red"><strong>SO2</string></font>',\
+             'DMS':'<font color="red"><strong>DMS</string></font>',\
+             'H2SO4':'<font color="red"><strong>H2SO4</string></font>'}
+    df['Variable']=listofvs
+    df['DJF']=df['Variable'].apply(lambda x: '<a href="{}_{}">DJF</a>'.format(x,form.replace('season','DJF')))
+    df['JJA']=df['Variable'].apply(lambda x: '<a href="{}_{}">JJA</a>'.format(x,form.replace('season','JJA')))
+    df['ANN']=df['Variable'].apply(lambda x: '<a href="{}_{}">ANN</a>'.format(x,form.replace('season','ANN')))
+    df['Variable']=df['Variable'].map(spfull).fillna(df['Variable'])
+    df.columns = ['Variable','','Seasons',' ']
+    styler = df.style
+    styler=styler.set_caption(title).set_table_styles([
+        {'selector':'caption',
+        'props':[
+            ('font-weight','bold'),
+            ('font-size','2.5em'),
+            ('padding-bottom','1em'),
+            ('text-align','center'),
+            ('border-width','0.5em')]},
+        {'selector':'th.col_heading',
+        'props':[
+            ('font-size','1.5em'),
+            ('padding-bottom','1em')]}
+    ])
+
+    html = (
+        styler.set_properties(**{'font-size':'12pt','font-family':'calibri','width':'12em','text-align':'center','padding-bottom':'1em'}).hide(axis="index").to_html()
+    )
+    html=html.replace('</caption>','</caption>  <caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding-left: 2.5em"></caption>')
+    return html
+
+def get_html_table(df):
+
+    styles = [
+        dict(selector=" ", 
+             props=[("margin","0"),
+                    ("font-family","sans-serif"),
+                    {"font-size","medium"},
+                    {"text-align","right"},
+                    {"width","auto"},
+                    ("border","0"),
+                       ]),
+
+        dict(selector="tbody tr:nth-child(even)",
+             props=[("background-color", "white")]),
+        dict(selector="tbody tr:nth-child(odd)",
+             props=[("background-color", "#EDEDED")]),
+
+        dict(selector="td", 
+             props=[("padding", "5px")]),
+
+        dict(selector="thead th",
+             props=[("background-color", "#FFFFFF"),
+                    {"border-bottom","2px solid #808080"},
+                    {"color","#808080"},
+                    {"text-align","right"},
+                    ("font-family","sans-serif"),
+                    {"font-size","medium"}]),
+            ]
+    return (df.style.set_table_styles(styles)).to_html()
+
 
 def get_crange(v1,v2):
     aagg = (np.max(v1.values)+np.max(v2.values))/2
@@ -59,7 +139,7 @@ def get_crange2(diff):
     aagg = np.max(abs(diff).values)
     aagg = np.log10(aagg)
     expo = np.ceil(aagg)
-    s2 = np.array([-100,-50,-20,-10,-5,-2,-1,1,2,5,10,20,50,100])*(10**(expo)/100)
+    s2 = np.array([-100,-70,-50,-20,-10,-5,-2,-1,1,2,5,10,20,50,70,100])*(10**(expo)/1e3)
     return s2
 
 def get_crange3(v1,v2):
@@ -69,9 +149,12 @@ def get_crange3(v1,v2):
     s1=np.array(s1)*(10**(np.round(aagg-2.7)))
     return s1
 
-def get_crange4(adiff):
+def get_crange4(adiff,v):
     s2=[-100,-50.,-20,-10,-5,-2,2,5,10,20,50,100]
-    aagg=0.25*(abs(np.max(adiff).values)+abs(np.min(adiff).values))/2
+    if (abs(np.max(v).values)/abs(np.max(adiff).values))<10:
+        aagg=0.25*0.1*(abs(np.max(adiff).values)+abs(np.min(adiff).values))/2
+    else:                           
+        aagg=0.25*(abs(np.max(adiff).values)+abs(np.min(adiff).values))/2
     aagg=np.log10(aagg)
     s2=np.array(s2)*(10**(np.round(aagg-1.7)))*10
     return s2
@@ -80,7 +163,10 @@ def get_vertint(vdata,ha,p0,hb,ps,grav,fact):
     ## calc. dp
     delp = 0*vdata
     p = ha*p0+hb*ps
-    p = p.transpose('ilev','ncol')
+    if 'ncol' in p.dims:
+        p = p.transpose('ilev','ncol')
+    else:
+        p = p.transpose('ilev','lat','lon')
     delp = p[1:,:].values-p[:-1,:].values
     delp = delp + 0*vdata
     ## unit conversion and vertical integration
@@ -89,20 +175,27 @@ def get_vertint(vdata,ha,p0,hb,ps,grav,fact):
     vdata = vdata.sum('lev')
     return vdata
     
-def get_hplots(path,case,ts,aer,plev=None,mod='eam',reg=None):
+def get_hplots(path,case,ts,aer,plev=None,mod='eam',reg=None,land=None):
     ## reading data as xarray
-    data = xr.open_mfdataset(path+case+'.'+mod+'.'+ts+'.*_climo.nc')
-    lon = data['lon']
-    lon[lon > 180.] -= 360.
-    lat = data['lat']
-    
+    try:
+        data = xr.open_mfdataset(path+case+'.'+mod+'.'+ts+'.*_climo.nc')
+        lon = data['lon']
+        lon[lon > 180.] -= 360.
+    except:
+        data = xr.open_mfdataset(path+case+'*'+ts+'*_climo.nc').isel(time=0)
+        lon = xr.where(data.lon > 180,data.lon-360,data.lon)
+        lon = lon.assign_coords(lon=lon.values)
+        data['lon'] = lon
+        lon = lon.sortby(lon)
+        data = data.sortby('lon')
+    lat = data['lat']  
     if reg!=None:
         lat1,lat2,lon1,lon2=get_latlon(reg)
     else:
         lat1,lat2,lon1,lon2=lat.values.min(),lat.values.max(),lon.values.min(),lon.values.max()
-  
     
-    if ts=='ANN':
+    
+    if 'year' in data.coords:
         data = data.rename({'year':'season'})
     pval = 'bdn'
     fact = 1e9
@@ -143,11 +236,17 @@ def get_hplots(path,case,ts,aer,plev=None,mod='eam',reg=None):
     p0 = data['P0']
     ps = data['PS']
     area = data['area']
+    landF = data['LANDFRAC']
     ## all variable list
     vlist = list(data.variables.keys())
     # Total BC burden
-    var_avars = fnmatch.filter(vlist,aer+'_a?')
-    var_cvars = fnmatch.filter(vlist,aer+'_c?')
+    gvars = ['SO2','DMS','H2SO4']
+    if aer in gvars:
+        var_avars = fnmatch.filter(vlist,aer)
+        var_cvars = []
+    else:
+        var_avars = fnmatch.filter(vlist,aer+'_a?')
+        var_cvars = fnmatch.filter(vlist,aer+'_c?')
     var_vars = var_avars+var_cvars
     print(var_vars)
     vdata = data[var_vars]
@@ -156,22 +255,37 @@ def get_hplots(path,case,ts,aer,plev=None,mod='eam',reg=None):
         vdata = get_vertint(vdata,ha,p0,hb,ps,grav,fact)
     else:
         vdata = vdata*fact
+    if land==True:
+        vdata = vdata.where(landF>0)
+    else:
+        vdata = vdata.where(landF>=0)
     ## getting total
     vdata[aer] = vdata.to_array().sum('variable')
     ## actual mean
     vdatalatlon = vdata.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2))
     arealatlon = area.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2))
-    mean = (vdatalatlon*arealatlon).sum(['ncol'])/(arealatlon).sum(['ncol'])
+    mean = (vdatalatlon*arealatlon).sum(vdatalatlon.dims)/(arealatlon).sum(arealatlon.dims)
 
     return vdata,mean,var_vars+[aer],pval,lon,lat
 
 def get_vplots(path,case,ts,aer,mod='eam'):
     ## reading data as xarray
-    data = xr.open_mfdataset(path+case+'.'+mod+'.'+ts+'.*_climo.nc')
+    try:
+        data = xr.open_mfdataset(path+case+'.'+mod+'.'+ts+'.*_climo.nc')
+        lon = data['lon']
+        lon[lon > 180.] -= 360.
+    except:
+        data = xr.open_mfdataset(path+case+'*'+ts+'*_climo.nc').isel(time=0)
+        lon = xr.where(data.lon > 180,data.lon-360,data.lon)
+        lon = lon.assign_coords(lon=lon.values)
+        data['lon'] = lon
+        lon = lon.sortby(lon)
+        data = data.sortby('lon')
+    lat = data['lat']
     fact = 1e9
     factaa = 1.01325e5 / 8.31446261815324 / 273.15 * 28.9647 / 1.e9   # kg-air/cm3-air
     factbb = factaa * 1.e15  # ug-air/m3-air
-    if ts=='ANN':
+    if 'year' in data.coords:
         data = data.rename({'year':'season'})
     if aer=='num':
         fact = factaa
@@ -179,29 +293,48 @@ def get_vplots(path,case,ts,aer,mod='eam'):
         fact = factbb
     ## all variable list
     vlist = list(data.variables.keys())
-    # Total BC burden
-    var_avars = fnmatch.filter(vlist,aer+'_a?')
-    var_cvars = fnmatch.filter(vlist,aer+'_c?')
+    ## get list of available variables
+    gvars = ['SO2','DMS','H2SO4']
+    if aer in gvars:
+        var_avars = fnmatch.filter(vlist,aer)
+        var_cvars = []
+    else:
+        var_avars = fnmatch.filter(vlist,aer+'_a?')
+        var_cvars = fnmatch.filter(vlist,aer+'_c?')
     var_vars = var_avars+var_cvars
     print(var_vars)
     vdata = data[var_vars]
     vdata = vdata*fact
     ## getting total
     vdata[aer] = vdata.to_array().sum('variable')
-    ll=data['lat'].round().values.tolist()
-    all_ll=ll*len(data.lev)
-    dd=vdata.to_dataframe()
-    dd=dd.drop(columns=['season'])
-    dd['lat']=all_ll
-    print(dd.columns)
-    vdata=dd.groupby(['lev','lat']).mean().to_xarray()
+    if 'ncol' in data.dims:
+        ll=data['lat'].round().values.tolist()
+        all_ll=ll*len(data.lev)
+        dd=vdata.to_dataframe()
+        dd=dd.drop(columns=['season'])
+        dd['lat']=all_ll
+        dd=dd.groupby(['lev','lat']).mean()
+        ## resampling to lower res (2 deg)
+        dd = dd.rolling(2).mean()
+        dd = dd.iloc[::2,:]
+        vdata=dd.to_xarray()
+    else:
+        vdata = vdata.mean(dim='lon')
     return vdata,var_vars+[aer]
 
 def get_singleV_hplots(path,case,ts,var,fact=1,vertinit=None,pval='radiation',mod='eam'):
     ## reading data as xarray
-    data = xr.open_mfdataset(path+case+'.'+mod+'.'+ts+'.*_climo.nc')
-    lon = data['lon']
-    lon[lon > 180.] -= 360.
+    try:
+        data = xr.open_mfdataset(path+case+'.'+mod+'.'+ts+'.*_climo.nc')
+        lon = data['lon']
+        lon[lon > 180.] -= 360.
+    except:
+        data = xr.open_mfdataset(path+case+'*'+ts+'*_climo.nc').isel(time=0)
+        lon = xr.where(data.lon > 180,data.lon-360,data.lon)
+        lon = lon.assign_coords(lon=lon.values)
+        data['lon'] = lon
+        lon = lon.sortby(lon)
+        data = data.sortby('lon')
     lat = data['lat']
     if ts=='ANN':
         data = data.rename({'year':'season'})   
@@ -220,13 +353,22 @@ def get_singleV_hplots(path,case,ts,var,fact=1,vertinit=None,pval='radiation',mo
     else:
         vdata = vdata*fact
     ## actual mean
-    mean = (vdata*area).sum(['ncol'])/(area).sum(['ncol'])
-    return vdata,mean,[var],pval,lon,lat
+    mean = (vdata*area).sum(area.dims)/(area).sum(area.dims)
+    return vdata,mean,var,pval,lon,lat
 
-def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam'):
-    data = xr.open_mfdataset(path+case+'.'+mod+'.'+ts+'.*_climo.nc')
-    lon = data['lon']
-    lon[lon > 180.] -= 360.
+def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam',indl=None,land=False):
+    try:
+        data = xr.open_mfdataset(path+case+'.'+mod+'.'+ts+'.*_climo.nc')
+        lon = data['lon'].values
+        lon[lon > 180.] -= 360.
+    except:
+        data = xr.open_mfdataset(path+case+'*'+ts+'*_climo.nc').isel(time=0)
+        lon = xr.where(data.lon > 180,data.lon-360,data.lon)
+        lon = lon.assign_coords(lon=lon.values)
+        data['lon'] = lon
+        lon = lon.sortby(lon)
+        data = data.sortby('lon')
+        indl = None
     lat = data['lat']
     if reg!=None:
         lat1,lat2,lon1,lon2=get_latlon(reg)
@@ -234,8 +376,8 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam'):
         lat1,lon1=get_local(loc)
         lat1,lat2,lon1,lon2 = get_nearestlatlon(lon1,lat1,lon,lat)
     else:
-        lat1,lat2,lon1,lon2=lat.values.min(),lat.values.max(),lon.values.min(),lon.values.max()
-    if ts=='ANN':
+        lat1,lat2,lon1,lon2=lat.values.min(),lat.values.max(),lon.min(),lon.max()
+    if 'year' in data.coords:
         data = data.rename({'year':'season'})
     ## factors
     fact = 1e-9
@@ -245,6 +387,7 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam'):
     p0 = data['P0']
     ps = data['PS']
     area = data['area']
+    landF = data['LANDFRAC']
     esfc=4*np.pi*(6.37122e6)**2
     avgod = 6.022e+23
     mwso4 = 115.0
@@ -256,7 +399,7 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam'):
         factaa = 1.e4/(avgod*1.e3)
     factcc  = factbb/mwso4*32.066     # convert kg/s to TgS/yr
     factdd  = 32.066/mwso4*1e-9       # convert kg to TgS
-    psmean = (ps*area).sum(['ncol'])/(area).sum(['ncol'])
+    psmean = (ps*area).sum(area.dims)/(area).sum(area.dims)
     sum_airmass = ((psmean*esfc)/grav)*1e6
     ## all variable list
     vlist = list(data.variables.keys())
@@ -272,12 +415,13 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam'):
      aer+'_c?'+'SFSIC',aer+'_c?'+'SFSBS',aer+'_c?'+'SFSBC',aer+'_c?'+'SFSES',\
      aer+'_c?'+'SFSEC',aer+'_c?'+'_sfgaex2',aer+'_c?'+'_sfcoag1',aer+'_c?'+'_sfcsiz3',\
      aer+'_c?'+'_sfcsiz4',aer+'_c?'+'_mixnuc1',aer+'_c?'+'AQH2SO4',\
-     aer+'_c?'+'AQSO4',aer+'_c?'+'_sfnnuc1','AQ_'+aer+'_a?','GS_'+aer+'_a?',aer+'_c?']
+     aer+'_c?'+'AQSO4',aer+'_c?'+'_sfnnuc1','AQ_'+aer+'_c?','GS_'+aer+'_c?',aer+'_c?']
     ## handle gas=phase species
     gvars = ['SO2','DMS','H2SO4']
     if aer in gvars:
         avariables = str(avariables).replace('_a?','').replace("'",'').replace(' ','')[1:-1].replace(aer+'DDF','DF_'+aer).replace(aer+'SFWET','WD_'+aer).split(',')
         cvariables = ['']*len(cvariables)
+    
     # sfc emis
     df = pd.DataFrame()
     nvar=0
@@ -351,16 +495,44 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam'):
             vdata[avar+'+'+cvar] = np.nan
         if unavail_vars!=[]:
             vdata[unavail_vars] = [np.nan]*len(unavail_vars)
-        ## actual mean
-        vdatalatlon = vdata.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2))
-        arealatlon = area.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2))
-        mean = (vdatalatlon*arealatlon).sum(['ncol'])/(arealatlon).sum(['ncol'])
+        ## actual mean calc.
+        if land==True:
+            vdata = vdata.where(landF>0)
+        else:
+            vdata = vdata.where(landF>=0)
+    
+        if indl != None:
+            try:
+                mean = (vdata.sel(ncol=indl)).mean(dim=['ncol'])
+            except:
+                vdatalatlon = vdata.where((lon>=lon1) & (lon<=lon2))
+                vdatalatlon = vdatalatlon.where((lat>=lat1) & (lat<=lat2))
+                arealatlon = area.where((lon>=lon1) & (lon<=lon2))
+                arealatlon = arealatlon.where((lat>=lat1) & (lat<=lat2))
+                mean = (vdatalatlon*arealatlon).sum(arealatlon.dims)/(arealatlon).sum(arealatlon.dims)
+        else:
+            vdatalatlon = vdata.where((lon>=lon1) & (lon<=lon2))
+            vdatalatlon = vdatalatlon.where((lat>=lat1) & (lat<=lat2))
+            arealatlon = area.where((lon>=lon1) & (lon<=lon2))
+            arealatlon = arealatlon.where((lat>=lat1) & (lat<=lat2))
+            mean = (vdatalatlon*arealatlon).sum(arealatlon.dims)/(arealatlon).sum(arealatlon.dims)
+        ## Renaming available variables
         rvars = dict(zip(prob_list+[avar+'+'+cvar],vars1))
         mean = mean.rename_vars(rvars)
-        if (('DDF' in avar) or ('GVF' in avar) or ('TBF' in avar)):
+        if (('DDF' in avar) or ('GVF' in avar) or ('TBF' in avar) or ('DF_' in avar)):
+            mean = -1*mean
+        if ((aer == 'SO2') and ('GS_' in avar)):
             mean = -1*mean
         ndf=mean.expand_dims(dim='vars').to_dataframe()
         df=pd.concat([df,ndf.replace(0, np.nan)])
+        
+    if 'ncol' in data.dims:    
+        df['year'] = np.nan
+        df = df[['season','year']+vars1]
+    else:
+        df['time'] = np.nan
+        df = df[['time']+vars1]
+        
     index_list = [bname,'Dry deposition','Wet deposition','surface emission',\
              'elevated emission','condensation-aging','gravitational','turbulent',\
              'incloud, stratiform','incloud, convective','belowcloud, strat.',\
@@ -375,7 +547,6 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam'):
                  'condensation-aging','surface emission','elevated emission',\
                  'cloudchem (AQH2SO4)','cloudchem (AQSO4)','sfnnuc1',\
                  'Aq. chem (gas-species)','gas chem/wet dep. (gas-species)']
-    
     if aer in gvars:
         aer = 'total_'+aer
         df.columns=df.columns.tolist()[:-1]+[aer]
@@ -390,7 +561,10 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam'):
     df.loc[snkname] = snk
     lifetime = (df.loc[bname][vars1[:-1]+[aer]]/abs(df.loc[snkname][vars1[:-1]+[aer]]))*365
     df.loc['Lifetime (days)'] = lifetime
-    df['season']=ts
+    if 'ncol' in data.dims:
+        df['season']=ts
+    else:
+        df['time']=ts
     df = df.reindex([bname,sname,srcname,'surface emission','elevated emission',snkname,\
                'Dry deposition','gravitational','turbulent','Wet deposition',\
                'incloud, stratiform','incloud, convective','belowcloud, strat.',\
@@ -400,10 +574,14 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam'):
                 'cloudchem (AQSO4)','condensation-aging','Aq. chem (gas-species)','gas chem/wet dep. (gas-species)'])
     return df
 
-def get_all_tables(ind,aer,path1,path2,case1,case2,path,reg,loc,mod):
+def get_all_tables(ind,aer,path1,path2,case1,case2,path,reg,loc,mod,land):
     ss = ['ANN','DJF','JJA']
-    cdatadef=get_tables(path1,case1,ss[ind],aer,reg=reg,loc=loc,mod=mod)
-    cdatase=get_tables(path2,case2,ss[ind],aer,reg=reg,loc=loc,mod=mod)
+    cdatadef=get_tables(path1,case1,ss[ind],aer,reg=reg,loc=loc,mod=mod,land=land)
+    cdatase=get_tables(path2,case2,ss[ind],aer,reg=reg,loc=loc,mod=mod,land=land)
+    if 'year' in cdatadef.columns:
+        cdatadef = cdatadef.drop('year', axis=1)
+    if 'year' in cdatase.columns:
+        cdatase = cdatase.drop('year', axis=1)
     cdatadiff = cdatase[cdatase.columns[1:]] - cdatadef[cdatase.columns[1:]]
     cdatarel = (cdatadiff/abs(cdatase[cdatase.columns[1:]]))*100
     for col in cdatarel.columns:
@@ -413,13 +591,14 @@ def get_all_tables(ind,aer,path1,path2,case1,case2,path,reg,loc,mod):
         df['difference']=cdatadiff[col]
         df['rel diff (%)']=cdatarel[col]
         pd.options.display.float_format = '{:g}'.format
-        df = df.applymap(lambda x: rounding(x) if ((abs(x)>1e-5) and (abs(x)<1e5)) else '{:.0e}'.format(x))
-        htable = build_table(df,'grey_light',index=True,padding='5px',text_align='right')
-        htable = htable.replace('<thead>','<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>Control Case:</strong>  '+case1+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>Test Case:</strong>  '+case2+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>Table for:</strong>  '+aer+'</caption>\n<thead>')
+        df = df.applymap(lambda x: rounding(x))
+        df = df.astype(str)
+        dfhtml = get_html_table(df)
+        htable = dfhtml.replace('<thead>','\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>CNTL:</strong>   '+case1+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>TEST:</strong>   '+case2+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>VRBL:</strong>  '+col+'</caption>\n<thead>')
         with open(path+'/'+col+'_'+ss[ind]+'.html','w') as f:
             f.write(htable)
             
-def gather_data(path,aer,case,mod,plev=None,sv=None,fact=1,vertinit=None,unit=None,reg=None):
+def gather_data(path,aer,case,mod,plev=None,sv=None,fact=1,vertinit=None,unit=None,reg=None,land=None):
     ss = ['ANN','DJF','JJA']
     dlist = []
     mlist = []
@@ -427,7 +606,7 @@ def gather_data(path,aer,case,mod,plev=None,sv=None,fact=1,vertinit=None,unit=No
         if sv!=None:
             orig=get_singleV_hplots(path,case,s,aer,mod=mod,fact=1,vertinit=None,pval='radiation')
         else:
-            orig=get_hplots(path,case,s,aer,mod=mod,plev=plev,reg=reg)
+            orig=get_hplots(path,case,s,aer,mod=mod,plev=plev,reg=reg,land=land)
         dlist.append(orig[0])
         mlist.append(orig[1])
     data_combined=xr.concat(dlist,"season")
@@ -443,7 +622,6 @@ def gather_data(path,aer,case,mod,plev=None,sv=None,fact=1,vertinit=None,unit=No
                 unit = "[# $m^{-3}$]"
             else:
                 unit = "[ug $m^{-3}$]"
-        
     return data_combined,m_combined,orig[2],orig[3],unit,orig[4],orig[5]
 
 def gather_ProfData(path,aer,case,mod):
@@ -481,17 +659,21 @@ def get_local(reg):
     loclatlon = {'SGP':'36.605 -97.485',\
                'ENA':'39.091 -28.026',\
                'NSA':'71.322 -156.615',\
-               'TCAP':'42.5 -70',\
+               'TCAP':'42.5 -72',\
                'TWP':'-2.06 147.425'}
     lat1 = float(loclatlon[reg].split(' ')[0])
     lon1 = float(loclatlon[reg].split(' ')[1])
     return lat1,lon1
 
 def get_nearestlatlon(lon1,lat1,lon,lat):
-    lon=lon.values
-    lat=lat.values
-    ind=np.argmin((lon-lon1)**2+(lat-lat1)**2)
-    return lat[ind],lat[ind],lon[ind],lon[ind]
+    try:
+        ind=np.argmin((lon-lon1)**2+(lat.values-lat1)**2)
+        lat1,lat2,lon1,lon2 = lat[ind],lat[ind],lon[ind],lon[ind]
+    except:
+        RLLlon = lon.sel(lon=lon1, method='nearest')
+        RLLlat = lat.sel(lat=lat1, method='nearest')
+        lat1,lat2,lon1,lon2 = RLLlat,RLLlat,RLLlon,RLLlon
+    return lat1,lat2,lon1,lon2
 
 def forcing_plots(plot_vars,path,area,season,plane,lon1,lon2,lat1,lat2,scrip):
     titles=['TOA $\u0394$F : ALL','TOA $\u0394$F$_{SW}$ : ALL','TOA $\u0394$F$_{LW}$ : ALL',\
@@ -507,7 +689,7 @@ def forcing_plots(plot_vars,path,area,season,plane,lon1,lon2,lat1,lat2,scrip):
     for var,t,l in zip(plot_vars,titles,labels):
         ax=plt.subplot(5,3,0+i,projection=crs.PlateCarree())
         m=(var*area).sum(['ncol'])/(area).sum(['ncol'])
-        get_plots( var,ax=ax,cmap=cmaps.BlueWhiteOrangeRed,levels=rr,\
+        get_plots( var,ax=ax,cmap=BlueWhiteOrangeRed_map,levels=rr,\
                      scrip_file=scrip,gridLines=False,\
                         lon_range=[lon1,lon2], lat_range=[lat1,lat2],
                         unit='[W m$^{-2}$]').get_map()
@@ -560,7 +742,7 @@ def get_forcings(datadef,datase,lon,lat,area,path,season,scrip,reg=None,loc=None
         for n,v in zip(names,plot_vars):
             v.name = n.strip()
         saving_data = xr.merge(plot_vars)
-        saving_data.load().to_netcdf(path+'/TOA_forcing_vars_global.nc')
+        #saving_data.load().to_netcdf(path+'/TOA_forcing_vars_global.nc')
         forcing_plots(plot_vars,path,area,season,'TOA',lon1,lon2,lat1,lat2,scrip)
 
     all_vars=[TTAEF,SWAEF,LWAEF,SWCAEF,LWCAEF,SWIND,LWIND,TTIND,SWDIR,LWDIR,TTDIR,\
@@ -605,7 +787,7 @@ def get_forcings(datadef,datase,lon,lat,area,path,season,scrip,reg=None,loc=None
         for n,v in zip(names,plot_vars):
             v.name = n.strip()
         saving_data = xr.merge(plot_vars)
-        saving_data.load().to_netcdf(path+'/SFC_forcing_vars_global.nc')
+        #saving_data.load().to_netcdf(path+'/SFC_forcing_vars_global.nc')
         forcing_plots(plot_vars,path,area,season,'SFC',lon1,lon2,lat1,lat2,scrip)
     
     all_vars=[TTAEF,SWAEF,LWAEF,SWCAEF,LWCAEF,SWIND,LWIND,TTIND,SWDIR,LWDIR,TTDIR,\
@@ -644,15 +826,21 @@ def get_forcing_df(path1,path2,case1,case2,path,season='ANN',mod='eam',\
     df.index=var_names
     df.to_csv(path+'/AllForcings_'+season+'.csv',index=False)
     pd.options.display.float_format = '{:g}'.format
-    df = df.applymap(lambda x: rounding(x) if ((abs(x)>1e-5) and (abs(x)<1e5)) else '{:.0e}'.format(x))
-    htable = build_table(df,'grey_light',index=True,padding='5px',text_align='right')
+    df = df.applymap(lambda x: rounding(x))
+    df = df.astype(str)
+    htable = get_html_table(df)
     with open(path+'/'+'AllForcings_'+season+'.html','w') as f:
         f.write(htable)
 
-def getVmap(data,ranges,ax,unit,cm):
+def getVmap(data,ranges,ax,unit,cm=plt.cm.jet,cbs=0,cbi=1,cbe=-1):
+    clen=len(np.arange(0,257)[cbs:cbe:cbi])
+    try:
+        cmap = ListedColormap(cm.colors[cbs:cbe:cbi])
+    except:
+        cmap = cm
+        print('Cannot subscript Segmented Colormap!')
     x,y = np.meshgrid(data['lat'],data['lev'])
-    im=ax.pcolormesh(x,y,data[:],cmap=cm,\
-                  norm=matplotlib.colors.BoundaryNorm(boundaries=ranges, ncolors=256))
+    im=ax.contourf(x,y,data[:],cmap=cmap,levels=ranges,norm=matplotlib.colors.BoundaryNorm(boundaries=ranges, ncolors=clen))
     plt.gca().invert_yaxis()
     plt.xlim([-89,88])
     plt.xticks([-60,-30,0,30,60])
@@ -663,10 +851,9 @@ def getVmap(data,ranges,ax,unit,cm):
     ax.tick_params(labelsize=12)
     cbar=plt.colorbar(im,ticks=ranges,drawedges=True)
     s1 = pd.DataFrame(ranges)
-    s2 = s1.applymap(lambda x: rounding(x) if ((abs(x)>1e-5) and (abs(x)<1e5)) else '{:.0e}'.format(x))[0].tolist()
+    s2 = s1.applymap(lambda x: rounding(x))[0].tolist()
     cbar_ticks=list(map(str,s2))
-    cbar_ticks = [i.rstrip('0').rstrip('.') for i in cbar_ticks]
-    #cbar_ticks=list(map(str,ranges))
+    cbar_ticks = [i.replace('.0','') if i[-2:]=='.0' else i for i in cbar_ticks]
     cbar.ax.set_yticklabels(['']+cbar_ticks[1:-1]+[''],size=12)
     cbar.set_label(label=unit,size=12)
     cbar.outline.set_linewidth(1.5)
@@ -679,14 +866,14 @@ def get_vert_profiles(data1,data2,diff,rel,var,ind,case1,case2,path=None):
     dd2=data2.isel(season=ind)
     rr=get_crange3(dd1,dd2)
     ee=diff.isel(season=ind)   
-    rr_diff=get_crange4(ee)
+    rr_diff=get_crange4(ee,dd1)
     ff=rel.isel(season=ind)
     rr_rel=[-100.,-50.,-20.,-10.,-5.,-2.,2.,5.,10.,20.,50.,100.]
     
     ss = ['ANN','DJF','JJA']
     titles = ['Control Case','Test Case','Test Case'+' $-$ '+'Control Case','Relative diff (%)']
     colBars = [rr,rr,rr_diff,rr_rel]
-    colMaps = [cmaps.amwg256,cmaps.amwg256,cmaps.BlueWhiteOrangeRed,cmaps.BlueWhiteOrangeRed]
+    colMaps = [amwg256_map,amwg256_map,BlueWhiteOrangeRed_map,BlueWhiteOrangeRed_map]
     if 'num' in var:
         gunit = '[# cm$^{-3}$]'
     else:
@@ -696,11 +883,19 @@ def get_vert_profiles(data1,data2,diff,rel,var,ind,case1,case2,path=None):
 
     fig = plt.figure(figsize=(18,14))
 
-    for i,t,colr,u,cm,vals in zip([1,2,3,4],titles,colBars,units,colMaps,varbls):
+    for i,t,colr,u,cmap,vals in zip([1,2,3,4],titles,colBars,units,colMaps,varbls):
+        if i<3:
+            cbs=5
+            cbe=-20
+            cbi=2
+        else:
+            cbs=0
+            cbe=-1
+            cbi=5
         panel=plt.subplot(220+i)
-        getVmap(vals,colr,panel,u,cm)
+        getVmap(vals,colr,panel,u,cm=cmap,cbs=cbs,cbe=cbe,cbi=cbi)
         panel.text(0.005,1.03,t,size=15,transform=panel.transAxes)
-    
+ 
     fig.suptitle(r'$\bf{Control\ Case:}$ '+case1+'\n'+\
                  r'$\bf{Test\ Case:}$ '+case2+'\n'+r'$\bf{Plotting:}$ '+var,\
                  fontsize=20,horizontalalignment='left',x=0.125,y=0.98)
@@ -715,18 +910,27 @@ def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,l
         lat1,lat2,lon1,lon2=lat.min(),lat.max(),lon.min(),lon.max()
     if path==None:
         path = Path('.').absolute()
-    if reg == 'Global':
+    if (reg == 'Global') or (reg == None):
         grid = False 
     dd1=data1.isel(season=ind)
-    var1 = dd1.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2)).dropna(dim='ncol')
+    var1 = dd1.where((lon>=lon1) & (lon<=lon2))
+    var1 = var1.where((lat>=lat1) & (lat<=lat2))
+    var1 = var1.stack(grid=var1.dims)
+    var1 = var1.dropna("grid", how="all")
     dd2=data2.isel(season=ind)
-    var2 = dd2.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2)).dropna(dim='ncol')
+    var2 = dd2.where((lon>=lon1) & (lon<=lon2))
+    var2 = var2.where((lat>=lat1) & (lat<=lat2))
+    var2 = var2.stack(grid=var2.dims)
+    var2 = var2.dropna("grid", how="all")
     rr=get_crange(var1,var2)
     ee=diff.isel(season=ind)
-    eevar = ee.where((lon>=lon1) & (lon<=lon2) & (lat>=lat1) & (lat<=lat2)).dropna(dim='ncol')
+    eevar = ee.where((lon>=lon1) & (lon<=lon2))
+    eevar = eevar.where((lat>=lat1) & (lat<=lat2))
+    eevar = eevar.stack(grid=eevar.dims)
+    eevar = eevar.dropna("grid", how="all")
     ff=rel.isel(season=ind)
     rr_diff=get_crange2(eevar)
-    rr_rel=[-100.,-50.,-20.,-10.,-5.,-2.,2.,5.,10.,20.,50.,100.]
+    rr_rel=[-100,-70,-50,-20,-10,-5,-2,2,5,10,20,50,70,100]
     m1 = mean1.isel(season=ind).values
     m2 = mean2.isel(season=ind).values
     m3 = m2-m1
@@ -735,7 +939,7 @@ def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,l
     titles = ['Control Case','Test Case','Test Case'+' $-$ '+'Control Case','Relative diff (%)']
     means = [m1,m2,m3,m4]
     colBars = [rr,rr,rr_diff,rr_rel]
-    colMaps = [cmaps.amwg256,cmaps.amwg256,cmaps.BlueWhiteOrangeRed,cmaps.BlueWhiteOrangeRed]
+    colMaps = [amwg256_map,amwg256_map,BlueWhiteOrangeRed_map,BlueWhiteOrangeRed_map]
     units = [unit,unit,unit,'[%]']
     varbls = [dd1,dd2,ee,ff]
 
@@ -743,18 +947,33 @@ def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,l
 
     for i,t,m,colr,u,cm,vals in zip([1,2,3,4],titles,means,colBars,units,colMaps,varbls):
         panel=plt.subplot(220+i,projection=crs.PlateCarree())
-        get_plots( vals,ax=panel,cmap=cm,levels=colr,\
-                     scrip_file=scrip,figsize=fig,gridLines=grid,\
-                        lon_range=[lon1,lon2], lat_range=[lat1,lat2],
-                        unit=u).get_map()
+        if i<3:
+            cbs=5
+            cbe=-20
+            cbi=2
+        else:
+            cbs=0
+            cbe=-1
+            cbi=5
+        try:
+            get_plots( vals,ax=panel,cmap=cm,levels=colr,\
+                         scrip_file=scrip,figsize=fig,gridLines=grid,\
+                            lon_range=[lon1,lon2], lat_range=[lat1,lat2],
+                            unit=u,cbs=cbs,cbe=cbe,cbi=cbi).get_map()
+        except:
+            get_plots( vals,ax=panel,cmap=cm,levels=colr,\
+                         scrip_file='',figsize=fig,gridLines=grid,\
+                            lon_range=[lon1,lon2], lat_range=[lat1,lat2],
+                            unit=u,cbs=cbs,cbe=cbe,cbi=cbi).get_map()
         panel.text(0.005,1.03,t,size=15,transform=panel.transAxes)
-        panel.text(0.8,1.03, 'mean: '+'{:0.2e}'.format(m),size=15,transform=panel.transAxes)
+        panel.text(0.8,1.03, 'mean: '+str(rounding(m)),size=15,transform=panel.transAxes)
     
-    fig.suptitle(r'$\bf{Control\ Case:}$ '+case1+'\n'+\
-                 r'$\bf{Test\ Case:}$ '+case2+'\n'+r'$\bf{Plotting:}$ '+var,\
+    fig.suptitle(r'$\bf{CNTL:}$ '+case1+'\n'+\
+                 r'$\bf{TEST:}$ '+case2+'\n'+r'$\bf{VRBL:}$ '+var,\
                  fontsize=20,horizontalalignment='left',x=0.125,y=0.96)
     ## Saving figure
     plt.savefig(str(path)+'/'+var+'_'+ss[ind]+'_latlon_'+pval+'.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
+    plt.close()
 
 
 

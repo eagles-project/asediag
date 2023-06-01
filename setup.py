@@ -19,8 +19,6 @@ requirements = [
     'xarray',
     'cartopy==0.19.0.post1',
     'matplotlib',
-    'cmaps',
-    'pretty_html_table',
     'pytest',
 ]
 

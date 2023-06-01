@@ -3,7 +3,8 @@ This will produce the batch scripts based on the
 user provided info in the config file (e.g., batch_config.ini).
 Submit batch scripts: python submit_asediag_batches.py
 '''
-import configparser
+#import configparser
+from six.moves import configparser
 import shutil
 import pkg_resources
 from subprocess import Popen, PIPE, STDOUT
@@ -22,6 +23,7 @@ config.read('batch_config.ini')
 account = config.get('BATCH','account')
 partition = config.get('BATCH','partition')
 env = config.get('ENV','env')
+source = config.get('ENV','source')
 asediag_dir = config.get('CMD','asediag_dir')
 inDirectory1 = config.get('CMD','inDirectory1')
 inDirectory2 = config.get('CMD','inDirectory2')
@@ -41,9 +43,9 @@ if case2==None:
     
 ## Dictionary for different diagnostics and their relevant command line inputs
 ## For more info check the with help command: python asediag.py -h
-itemDict = {'latlon':' -vlist','tables':' -tab -hplot','forcings':' -forcing -hplot',\
+itemDict = {'extra':' -vlist -hplot','tables':' -tab -hplot','forcings':' -forcing -hplot',\
             'surface':' -pval 0','200':' -pval 200','500':' -pval 500','850':' -pval 850',\
-                'zonal':' -prof -hplot'}
+                'zonal':' -prof -hplot','latlon':''}
 
 for item in diags.split(','):
     ## defines this script path (i.e. asediag)
@@ -57,7 +59,9 @@ for item in diags.split(','):
         filedata = file.read()
         filedata = filedata.replace('<account>',account)
         filedata = filedata.replace('<partition>',partition)
-        filedata = filedata.replace('<env>',env)
+        filedata = filedata.replace('<source>',source)
+        if env != '':
+            filedata = filedata.replace('# user-defined environment','conda activate '+env)
         filedata = filedata.replace('<asediag_dir>',asediag_dir)
         filedata = filedata.replace('<dir1>',inDirectory1)
         filedata = filedata.replace('<dir2>',inDirectory2)
@@ -73,5 +77,6 @@ for item in diags.split(','):
     with open(outDirectory+'/get_sediag_'+item+'.sh','w') as file:
         file.write(filedata)
     ## submitting the batch jobs
-    exec_shell(f'sbatch {outDirectory}/get_sediag_'+item+'.sh')
+    job_string = 'sbatch '+outDirectory+'/get_sediag_'+item+'.sh'
+    exec_shell(job_string)
     
