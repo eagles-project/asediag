@@ -38,7 +38,7 @@ class get_plots(object):
         
     def get_verts(self):
         try:
-            corner_lon,corner_lat,center_lon,center_lat = gen_scrip(self.scrip_file).get_scrip_file()
+            corner_lon,corner_lat,center_lon,center_lat = gen_scrip(res=self.scrip_file).get_scrip_file()
         except:
             ds_scrip=xr.open_dataset(self.scrip_file)
             corner_lon = np.copy( ds_scrip.grid_corner_lon.values )
@@ -93,7 +93,7 @@ class get_plots(object):
         except:
             self.cm = self.cm
             print('Cannot subscript Segmented Colormap!')
-        if ('.nc' in str(self.scrip_file)) | (type(self.scrip_file)==int):
+        if ('.nc' in str(self.scrip_file)) | (type(int(self.scrip_file))==int):
             var, verts = self.get_verts()
             im = PolyCollection(verts,cmap=self.cm,**kwd_polycollection,\
                                norm=matplotlib.colors.BoundaryNorm(boundaries=ranges, ncolors=clen) )
