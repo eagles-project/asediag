@@ -8,31 +8,8 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from matplotlib.collections import PolyCollection
 from matplotlib.colors import ListedColormap
 import pandas as pd
-# from SCRIP_corners import get_scrip_info
-
-def rounding(n):
-    if (type(n)==str) or (np.isnan(n)):
-        return str('-')
-    elif ((abs(n)>1e-5) and (abs(n)<1e5)):
-        try:
-            sgn = '-' if n<0 else ''
-            num = format(abs(n)-int(abs(n)),'f')
-            if int(num[2:])<1:
-                d = str((abs(n)))
-                return sgn + d
-            else:
-                for i,e in enumerate(num[2:]):
-                    if e!= '0':
-                        if i==0:
-                            d = str(int(abs(n))) + (num[1:i+5])
-                        else:
-                            d = str(int(abs(n))) + (num[1:i+4])
-                        return sgn+d
-        except:
-            return '-'
-    else:
-        return '{:.0e}'.format(n)
-
+from asediag.asediag_utils import rounding
+from asediag.gen_scrip_file import gen_scrip
     
 class get_plots(object):
     
@@ -60,13 +37,14 @@ class get_plots(object):
     
         
     def get_verts(self):
-        # try:
-        #     corner_lon,corner_lat,center_lon,center_lat = get_scrip_info(self.scrip_file,nc=True)
-        # except:
-        ds_scrip=xr.open_dataset(self.scrip_file)
-        corner_lon = np.copy( ds_scrip.grid_corner_lon.values )
-        corner_lat = np.copy( ds_scrip.grid_corner_lat.values )
-        center_lon = np.copy( ds_scrip.grid_center_lon.values )
+        try:
+            corner_lon,corner_lat,center_lon,center_lat = gen_scrip(self.scrip_file).get_scrip_file()
+        except:
+            ds_scrip=xr.open_dataset(self.scrip_file)
+            corner_lon = np.copy( ds_scrip.grid_corner_lon.values )
+            corner_lat = np.copy( ds_scrip.grid_corner_lat.values )
+            center_lon = np.copy( ds_scrip.grid_center_lon.values )
+            
         if ((np.min(self.lon_range) < 0) & (np.max(corner_lon) > 180)):
             corner_lon[corner_lon > 180.] -= 360.
         

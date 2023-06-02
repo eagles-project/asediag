@@ -7,7 +7,8 @@ import pkg_resources
 import shutil
 
 from asediag.aerosol_diag_SEgrid import get_forcing_df, gather_ProfData, get_vert_profiles
-from asediag.aerosol_diag_SEgrid import gather_data, get_map, get_all_tables, get_html
+from asediag.aerosol_diag_SEgrid import gather_data, get_map, get_all_tables
+from asediag.asediag_utils import get_html
 
 def main():
 
