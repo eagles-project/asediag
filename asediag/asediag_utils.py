@@ -118,51 +118,76 @@ def get_html_table(df):
     return (df.style.set_table_styles(styles)).to_html()
 
 
-def get_crange(v1,v2):
-    aagg = (np.max(v1.values)+np.max(v2.values))/2
-    aagg = np.log10(aagg)
-    expo = np.floor(aagg)
-    bbgg = aagg - expo
-    if 10**(bbgg)<2.:
-        s1 = [5*10**(expo-4),1*10**(expo-3),2*10**(expo-3), \
-                5*10**(expo-3),1*10**(expo-2),2*10**(expo-2), \
-                5*10**(expo-2),1*10**(expo-1),2*10**(expo-1), \
-                5*10**(expo-1),10**expo,      2.*10**expo]
-    elif 10**(bbgg)<5.:
-        s1 = [1*10**(expo-3),2*10**(expo-3),5*10**(expo-3), \
-                1*10**(expo-2),2*10**(expo-2),5*10**(expo-2), \
-                1*10**(expo-1),2*10**(expo-1),5*10**(expo-1), \
-                10**expo,      2.*10**expo,   5.*10**expo]
+def get_rounded_latlon(val1,val2):
+    lg1 = val1 % 5
+    lg2 = val2 % 5
+    if lg1 in [0,5]:
+        alg1 = val1
     else:
-        s1 = [2*10**(expo-3),5*10**(expo-3),1*10**(expo-2), \
-                2*10**(expo-2),5*10**(expo-2),1*10**(expo-1), \
-                2*10**(expo-1),5*10**(expo-1),10**expo,       \
-                2.*10**expo,   5.*10**expo,   10**(expo+1)]
-    return s1
+        alg1 = val1 - lg1 + 5
+    if lg2 in [0,5]:
+        alg2 = val2
+    else:
+        alg2 = val2 - lg2 + 5
+        
+    diff = alg2 - alg1
+    
+    step = diff // 5
+    
+    return alg1, alg2, step
 
-def get_crange2(diff):
-    aagg = np.max(abs(diff).values)
-    aagg = np.log10(aagg)
-    expo = np.ceil(aagg)
-    s2 = np.array([-100,-70,-50,-20,-10,-5,-2,-1,1,2,5,10,20,50,70,100])*(10**(expo)/1e3)
-    return s2
-
-def get_crange3(v1,v2):
-    s1=[0.05,0.1,0.2,0.5,1,2,5,10,20,50,100,200,500,1000]
-    aagg=(np.max(v1).values+np.max(v2).values)/2
-    aagg=np.log10(aagg)
-    s1=np.array(s1)*(10**(np.round(aagg-2.7)))
-    return s1
-
-def get_crange4(adiff,v):
-    s2=[-100,-50.,-20,-10,-5,-2,2,5,10,20,50,100]
-    if (abs(np.max(v).values)/abs(np.max(adiff).values))<10:
-        aagg=0.25*0.1*(abs(np.max(adiff).values)+abs(np.min(adiff).values))/2
-    else:                           
-        aagg=0.25*(abs(np.max(adiff).values)+abs(np.min(adiff).values))/2
-    aagg=np.log10(aagg)
-    s2=np.array(s2)*(10**(np.round(aagg-1.7)))*10
-    return s2
+class gen_colbar_range(object):
+    
+    def __init__(self,**kwargs):
+        self.v1 = kwargs.get('v1',None)
+        self.v2 = kwargs.get('v2',None)
+        self.diff = kwargs.get('diff',None)
+    
+    def hmap(self):
+        aagg = (np.max(self.v1.values)+np.max(self.v2.values))/2
+        aagg = np.log10(aagg)
+        expo = np.floor(aagg)
+        bbgg = aagg - expo
+        if 10**(bbgg)<2.:
+            s1 = [5*10**(expo-4),1*10**(expo-3),2*10**(expo-3), \
+                    5*10**(expo-3),1*10**(expo-2),2*10**(expo-2), \
+                    5*10**(expo-2),1*10**(expo-1),2*10**(expo-1), \
+                    5*10**(expo-1),10**expo,      2.*10**expo]
+        elif 10**(bbgg)<5.:
+            s1 = [1*10**(expo-3),2*10**(expo-3),5*10**(expo-3), \
+                    1*10**(expo-2),2*10**(expo-2),5*10**(expo-2), \
+                    1*10**(expo-1),2*10**(expo-1),5*10**(expo-1), \
+                    10**expo,      2.*10**expo,   5.*10**expo]
+        else:
+            s1 = [2*10**(expo-3),5*10**(expo-3),1*10**(expo-2), \
+                    2*10**(expo-2),5*10**(expo-2),1*10**(expo-1), \
+                    2*10**(expo-1),5*10**(expo-1),10**expo,       \
+                    2.*10**expo,   5.*10**expo,   10**(expo+1)]
+        return s1
+    
+    def hdiff(self):
+        aagg = np.max(abs(self.diff).values)
+        aagg = np.log10(aagg)
+        expo = np.ceil(aagg)
+        s1 = np.array([-100,-70,-50,-20,-10,-5,-2,-1,1,2,5,10,20,50,70,100])*(10**(expo)/1e3)
+        return s1
+    
+    def vmap(self):
+        s1=[0.05,0.1,0.2,0.5,1,2,5,10,20,50,100,200,500,1000]
+        aagg=(np.max(self.v1).values+np.max(self.v2).values)/2
+        aagg=np.log10(aagg)
+        s1=np.array(s1)*(10**(np.round(aagg-2.7)))
+        return s1
+    
+    def vdiff(self):
+        s2=[-100,-50.,-20,-10,-5,-2,2,5,10,20,50,100]
+        if (abs(np.max(self.v1).values)/abs(np.max(self.diff).values))<10:
+            aagg=0.25*0.1*(abs(np.max(self.diff).values)+abs(np.min(self.diff).values))/2
+        else:                           
+            aagg=0.25*(abs(np.max(self.diff).values)+abs(np.min(self.diff).values))/2
+        aagg=np.log10(aagg)
+        s1 = np.array(s2)*(10**(np.round(aagg-1.7)))*10
+        return s1
 
 def get_vertint(vdata,ha,p0,hb,ps,grav,fact):
     ## calc. dp

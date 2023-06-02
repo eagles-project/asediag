@@ -8,7 +8,7 @@ import cartopy.crs as crs
 from asediag.nclCols import amwg256_map, BlueWhiteOrangeRed_map
 from asediag.aerdiag_plots import get_plots
 from asediag.asediag_utils import rounding, get_html_table, get_vertint
-from asediag.asediag_utils import get_crange, get_crange2, get_crange3, get_crange4
+from asediag.asediag_utils import gen_colbar_range
 import matplotlib
 import fnmatch
 from pathlib import Path
@@ -735,9 +735,9 @@ def getVmap(data,ranges,ax,unit,cm=plt.cm.jet,cbs=0,cbi=1,cbe=-1):
 def get_vert_profiles(data1,data2,diff,rel,var,ind,case1,case2,path=None):
     dd1=data1.isel(season=ind)
     dd2=data2.isel(season=ind)
-    rr=get_crange3(dd1,dd2)
+    rr=gen_colbar_range(v1=dd1,v2=dd2).vmap()
     ee=diff.isel(season=ind)   
-    rr_diff=get_crange4(ee,dd1)
+    rr_diff=gen_colbar_range(diff=ee,v1=dd1).vdiff()
     ff=rel.isel(season=ind)
     rr_rel=[-100.,-50.,-20.,-10.,-5.,-2.,2.,5.,10.,20.,50.,100.]
     
@@ -793,14 +793,14 @@ def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,l
     var2 = var2.where((lat>=lat1) & (lat<=lat2))
     var2 = var2.stack(grid=var2.dims)
     var2 = var2.dropna("grid", how="all")
-    rr=get_crange(var1,var2)
+    rr=gen_colbar_range(v1=var1,v2=var2).hmap()
     ee=diff.isel(season=ind)
     eevar = ee.where((lon>=lon1) & (lon<=lon2))
     eevar = eevar.where((lat>=lat1) & (lat<=lat2))
     eevar = eevar.stack(grid=eevar.dims)
     eevar = eevar.dropna("grid", how="all")
     ff=rel.isel(season=ind)
-    rr_diff=get_crange2(eevar)
+    rr_diff=gen_colbar_range(diff=eevar).hdiff()
     rr_rel=[-100,-70,-50,-20,-10,-5,-2,2,5,10,20,50,70,100]
     m1 = mean1.isel(season=ind).values
     m2 = mean2.isel(season=ind).values
