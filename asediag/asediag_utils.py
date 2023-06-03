@@ -142,9 +142,21 @@ class gen_colbar_range(object):
         self.v1 = kwargs.get('v1',None)
         self.v2 = kwargs.get('v2',None)
         self.diff = kwargs.get('diff',None)
+        self.factor = kwargs.get('factor',None)
     
     def hmap(self):
-        aagg = (np.max(self.v1.values)+np.max(self.v2.values))/2
+        if self.factor != None:
+            factor = self.factor
+            mstd1h = (np.mean(self.v1.values)+factor*np.std(self.v1.values))
+            mstd1l = (np.mean(self.v1.values)-factor*np.std(self.v1.values))
+            v1 = self.v1[(self.v1<=mstd1h) & (self.v1>=mstd1l)]
+            mstd1h = (np.mean(self.v2.values)+factor*np.std(self.v2.values))
+            mstd1l = (np.mean(self.v2.values)-factor*np.std(self.v2.values))
+            v2 = self.v2[(self.v2<=mstd1h) & (self.v2>=mstd1l)]
+            aagg = (np.max(v1.values)+np.max(v2.values))/2
+        else:
+            aagg = (np.max(self.v1.values)+np.max(self.v2.values))/2
+        
         aagg = np.log10(aagg)
         expo = np.floor(aagg)
         bbgg = aagg - expo

@@ -93,7 +93,7 @@ class get_plots(object):
         except:
             self.cm = self.cm
             print('Cannot subscript Segmented Colormap!')
-        if ('.nc' in str(self.scrip_file)) | (type(int(self.scrip_file))==int):
+        if ('.nc' in str(self.scrip_file)) | (self.scrip_file.isdigit()):
             var, verts = self.get_verts()
             im = PolyCollection(verts,cmap=self.cm,**kwd_polycollection,\
                                norm=matplotlib.colors.BoundaryNorm(boundaries=ranges, ncolors=clen) )
