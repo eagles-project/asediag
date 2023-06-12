@@ -228,9 +228,8 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam',indl=None,land=False
     hb = data['hybi']
     p0 = data['P0']
     ps = data['PS']
-    area = data['area']
+    area = data['area']*(6.37122e6)**2
     landF = data['LANDFRAC']
-    esfc=4*np.pi*(6.37122e6)**2
     avgod = 6.022e+23
     mwso4 = 115.0
     factaa  = mwso4*10.0/avgod        # convert molec/cm2/s to kg/m2/s
@@ -241,8 +240,10 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam',indl=None,land=False
         factaa = 1.e4/(avgod*1.e3)
     factcc  = factbb/mwso4*32.066     # convert kg/s to TgS/yr
     factdd  = 32.066/mwso4*1e-9       # convert kg to TgS
-    psmean = (ps*area).sum(area.dims)/(area).sum(area.dims)
-    sum_airmass = ((psmean*esfc)/grav)*1e6
+    sum_airmass = ((ps*area).sum()/grav)*1e6
+    fact_kgpkg_kgpcm3 = 1.01325e5 / 8.31446261815324 / 273.15 * 28.9647 / 1.e9   # kg-air/cm3-air
+    fact_kgpcm3_ugpm3 = fact_kgpkg_kgpcm3 * 1e15
+    
     ## all variable list
     vlist = list(data.variables.keys())
     # List of all variables considered
@@ -258,6 +259,7 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam',indl=None,land=False
      aer+'_c?'+'SFSEC',aer+'_c?'+'_sfgaex2',aer+'_c?'+'_sfcoag1',aer+'_c?'+'_sfcsiz3',\
      aer+'_c?'+'_sfcsiz4',aer+'_c?'+'_mixnuc1',aer+'_c?'+'AQH2SO4',\
      aer+'_c?'+'AQSO4',aer+'_c?'+'_sfnnuc1','AQ_'+aer+'_c?','GS_'+aer+'_c?',aer+'_c?']
+    
     ## handle gas=phase species
     gvars = ['SO2','DMS','H2SO4']
     if aer in gvars:
@@ -272,7 +274,7 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam',indl=None,land=False
         var_avars = fnmatch.filter(vlist,avar)
         var_cvars = fnmatch.filter(vlist,cvar)
         var_vars = var_avars+var_cvars
-        #print(var_vars)
+
         vdata = data[var_vars]
         if ((avar == aer+'_a?') and (nvar == 1)) or ((avar == aer) and (nvar == 1)):
             vars1 = var_vars+[avar+'+'+cvar]
@@ -280,52 +282,50 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam',indl=None,land=False
                 bname = 'Burden (TgS)'
                 srcname = 'Sources (TgS/yr)'
                 snkname = 'Sinks (TgS/yr)'
-                vdata = get_vertint(vdata,ha,p0,hb,ps,grav,factdd)*esfc
+                vdata = get_vertint(vdata,ha,p0,hb,ps,grav,factdd)
             elif aer == 'num':
                 bname = 'Burden (#/mg-air)'
                 srcname = 'Sources (#/mg-air/yr)'
                 snkname = 'Sinks (#/mg-air/yr)'
-                vdata = get_vertint(vdata,ha,p0,hb,ps,grav,1)*esfc/sum_airmass
+                vdata = get_vertint(vdata,ha,p0,hb,ps,grav,1)/sum_airmass
             else:
                 bname = 'Burden (Tg)'
                 srcname = 'Sources (Tg/yr)'
                 snkname = 'Sinks (Tg/yr)'
-                vdata = get_vertint(vdata,ha,p0,hb,ps,grav,fact)*esfc
+                vdata = get_vertint(vdata,ha,p0,hb,ps,grav,fact)
         elif ((avar == aer+'_a?') and (nvar > 1)) or ((avar == aer) and (nvar > 1)):
             if (aer == 'so4') or (aer in gvars):
                 #sfc conc
                 sname = 'Sfc Conc. (ug/m3)'
                 vdata = vdata[dict(lev=-1)].drop_vars('lev')
-                vdata = vdata*1e9
+                vdata = vdata*fact_kgpcm3_ugpm3
             elif aer == 'num':
                 #sfc conc
-                sname = 'Sfc Conc. (#/m3)'
+                sname = 'Sfc Conc. (#/cm3)'
                 vdata = vdata[dict(lev=-1)].drop_vars('lev')
                 vdata = vdata*1
             else:
                 #sfc conc
                 sname = 'Sfc Conc. (ug/m3)'
                 vdata = vdata[dict(lev=-1)].drop_vars('lev')
-                vdata = vdata*1e9
+                vdata = vdata*fact_kgpcm3_ugpm3
         else:
             if ('_CLXF' in avar):
                 if (aer == 'bc') or (aer == 'pom'):
-                    vdata = vdata*factaaa*esfc*factbb
+                    vdata = vdata*factaaa*factbb
                 elif aer == 'num':
-                    vdata = vdata*factaa*esfc*factbb/sum_airmass
+                    vdata = vdata*factaa*factbb/sum_airmass
                 elif (aer == 'so4') or (aer in gvars):
-                    vdata = vdata*factaa*factcc*esfc
+                    vdata = vdata*factaa*factcc
                 else:
-                    vdata = vdata*factaa*esfc
-            elif ('WD_' in avar):
-                vdata = vdata*factcc
+                    vdata = vdata*factaa
             else:
                 if (aer == 'so4') or (aer in gvars):
-                    vdata = vdata*factcc*esfc
+                    vdata = vdata*factcc
                 elif aer == 'num':
-                    vdata = vdata*factbb*esfc/sum_airmass
+                    vdata = vdata*factbb/sum_airmass
                 else:
-                    vdata = vdata*factbb*esfc
+                    vdata = vdata*factbb
         ## getting total
         prob_list=[]
         for item in vars1[:-1]:
@@ -351,17 +351,22 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam',indl=None,land=False
                 vdatalatlon = vdatalatlon.where((lat>=lat1) & (lat<=lat2))
                 arealatlon = area.where((lon>=lon1) & (lon<=lon2))
                 arealatlon = arealatlon.where((lat>=lat1) & (lat<=lat2))
-                mean = (vdatalatlon*arealatlon).sum(arealatlon.dims)/(arealatlon).sum(arealatlon.dims)
+                mean = (vdatalatlon*arealatlon).sum(arealatlon.dims)
+        elif ('WD_' in avar):
+            vdatalatlon = vdata.where((lon>=lon1) & (lon<=lon2))
+            vdatalatlon = vdatalatlon.where((lat>=lat1) & (lat<=lat2))
+            mean = (vdatalatlon).sum(arealatlon.dims)
         else:
             vdatalatlon = vdata.where((lon>=lon1) & (lon<=lon2))
             vdatalatlon = vdatalatlon.where((lat>=lat1) & (lat<=lat2))
             arealatlon = area.where((lon>=lon1) & (lon<=lon2))
             arealatlon = arealatlon.where((lat>=lat1) & (lat<=lat2))
-            mean = (vdatalatlon*arealatlon).sum(arealatlon.dims)/(arealatlon).sum(arealatlon.dims)
+            mean = (vdatalatlon*arealatlon).sum(arealatlon.dims)
+            
         ## Renaming available variables
         rvars = dict(zip(prob_list+[avar+'+'+cvar],vars1))
         mean = mean.rename_vars(rvars)
-        if (('DDF' in avar) or ('GVF' in avar) or ('TBF' in avar) or ('DF_' in avar)):
+        if (('DDF' in avar) or ('GVF' in avar) or ('TBF' in avar) or ('DF_' in avar) or ('WD_' in avar)):
             mean = -1*mean
         if ((aer == 'SO2') and ('GS_' in avar)):
             mean = -1*mean
