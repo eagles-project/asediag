@@ -337,7 +337,7 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam',indl=None,land=False
             vdata[avar+'+'+cvar] = np.nan
         if unavail_vars!=[]:
             vdata[unavail_vars] = [np.nan]*len(unavail_vars)
-        ## actual mean calc.
+
         if land==True:
             vdata = vdata.where(landF>0)
         else:
@@ -366,12 +366,24 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam',indl=None,land=False
         ## Renaming available variables
         rvars = dict(zip(prob_list+[avar+'+'+cvar],vars1))
         mean = mean.rename_vars(rvars)
+        
+        # Treat specific varaibles
         if (('DDF' in avar) or ('GVF' in avar) or ('TBF' in avar) or ('DF_' in avar) or ('WD_' in avar)):
             mean = -1*mean
-        if ((aer == 'SO2') and ('GS_' in avar)):
-            mean = -1*mean
-        ndf=mean.expand_dims(dim='vars').to_dataframe()
-        df=pd.concat([df,ndf.replace(0, np.nan)])
+        
+        ### Treat SO2 separately: Based on discussions with Jianfeng Li (jianfeng.li@pnnl.gov)
+        if aer == 'SO2':
+            if 'WD_' in avar:
+                wdep_so2 = mean
+            elif '_CLXF' in avar:
+                elev_emis_so2 = mean
+            # GS_SO2 = SO2 emission (elevated) + WD_SO2 + Chemical reactions
+            elif 'GS_' in avar:
+                mean = mean + wdep_so2 - elev_emis_so2
+        
+        ## Appending to dataframe
+        ndf = mean.expand_dims(dim='vars').to_dataframe()
+        df = pd.concat([df,ndf.replace(0, np.nan)])
         
     if 'ncol' in data.dims:    
         df['year'] = np.nan
@@ -402,8 +414,12 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam',indl=None,land=False
         df.columns=df.columns.tolist()[:-1]+[aer]
         srcsnk = df.loc[listofSS[:-2]][vars1[:-1]+[aer]]
     
+    ## Estimating sources and sinks
     src = srcsnk.where(srcsnk>0).sum()
-    snk = srcsnk.where(srcsnk<0).sum()
+    if 'SO2' in aer:
+        snk = df.loc['gas chem/wet dep. (gas-species)'] + df.loc['Dry deposition']
+    else:
+        snk = srcsnk.where(srcsnk<0).sum()
     df.loc[srcname] = src
     df.loc[snkname] = snk
     lifetime = (df.loc[bname][vars1[:-1]+[aer]]/abs(df.loc[snkname][vars1[:-1]+[aer]]))*365
