@@ -40,6 +40,27 @@ if case1==None:
     case1 = inDirectory1.strip().split('/')[-3]
 if case2==None:
     case2 = inDirectory2.strip().split('/')[-3]
+
+## Actual output path directory
+path = str(outDirectory)+'/'+case2+'_minus_'+case1
+print('\nSelected output directoy:',path)
+print('\nAll shell scripts and log files will be stored here.')
+## copying the template content to out dir (i.e. outpath)
+## Getting rid of template directory would be best
+resource_package = __name__
+resource_path = 'asediag/template'
+tmp = pkg_resources.resource_filename(resource_package, resource_path)
+try:
+    shutil.copytree(tmp, path)
+except:
+    print('\nCan not create directory:',path)
+    pass
+with open(tmp+'/aerosol.html','r') as file:
+    filedata = file.read()
+    filedata = filedata.replace('F20TR_v2_ndg_ERA5_SEdata_NA_RRM',case2)
+    filedata = filedata.replace('F20TR_v2_ndg_ERA5_Defdata_NA_RRM',case1)
+with open(path+'/aerosol.html','w') as file:
+    file.write(filedata)
     
 ## Dictionary for different diagnostics and their relevant command line inputs
 ## For more info check the with help command: python asediag.py -h
@@ -53,9 +74,9 @@ for item in diags.split(','):
     resource_path = 'asediag/batch_script/get_sediag.sh'
     tmp = pkg_resources.resource_filename(resource_package, resource_path)
     ## copying the template batch file for each diagnostics (items)
-    shutil.copy(tmp, outDirectory+'/get_sediag_'+item+'.sh')
+    shutil.copy(tmp, path+'/get_sediag_'+item+'.sh')
     ## repacing template with actual info from config
-    with open(outDirectory+'/get_sediag_'+item+'.sh','r') as file:
+    with open(path+'/get_sediag_'+item+'.sh','r') as file:
         filedata = file.read()
         filedata = filedata.replace('<account>',account)
         filedata = filedata.replace('<partition>',partition)
@@ -66,6 +87,7 @@ for item in diags.split(','):
         filedata = filedata.replace('<dir1>',inDirectory1)
         filedata = filedata.replace('<dir2>',inDirectory2)
         filedata = filedata.replace('<outDir>',outDirectory)
+        filedata = filedata.replace('<logDir>',path)
         filedata = filedata.replace('<case1>',case1)
         filedata = filedata.replace('<case2>',case2)
         filedata = filedata.replace('<model>',model)
@@ -74,9 +96,9 @@ for item in diags.split(','):
         filedata = filedata.replace('<scrip_file>','<scrip_file>'+itemDict[item])
         filedata = filedata.replace('<scrip_file>',scrip_file)
     ## writing out to out directory
-    with open(outDirectory+'/get_sediag_'+item+'.sh','w') as file:
+    with open(path+'/get_sediag_'+item+'.sh','w') as file:
         file.write(filedata)
     ## submitting the batch jobs
-    job_string = 'sbatch '+outDirectory+'/get_sediag_'+item+'.sh'
+    job_string = 'sbatch '+path+'/get_sediag_'+item+'.sh'
     exec_shell(job_string)
     

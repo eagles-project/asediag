@@ -61,6 +61,8 @@ def main():
         case1 = path1.strip().split('/')[-3]
     if case2 == None:
         case2 = path2.strip().split('/')[-3]
+        
+    ## This directories are moved earlier for batch submissions
     path = str(outpath)+'/'+case2+'_minus_'+case1
     print('\nSelected output directoy:',path)
     ## copying the template content to out dir (i.e. outpath)
@@ -71,11 +73,12 @@ def main():
     try:
         shutil.copytree(tmp, path)
     except FileExistsError:
+        print('\nPath already exists!')
         pass
     except:
         print('\nCan not create directory:',tmp)
-    ## Rewriting the frontend here
-    ## !!This can be modified...Looks weird!!
+    # Rewriting the frontend here
+    # !!This can be modified...Looks weird!!
     with open(tmp+'/aerosol.html','r') as file:
         filedata = file.read()
         filedata = filedata.replace('F20TR_v2_ndg_ERA5_SEdata_NA_RRM',case2)

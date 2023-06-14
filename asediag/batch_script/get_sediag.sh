@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #SBATCH --job-name=sediag
-#SBATCH --output=<outDir>/sediag.o%j
+#SBATCH --output=<logDir>/sediag.o%j
 #SBATCH --account=<account>
 #SBATCH --nodes=1
 #SBATCH --time=<wallMin>
