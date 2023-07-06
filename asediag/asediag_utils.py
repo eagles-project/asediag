@@ -13,7 +13,7 @@ def get_dir_path(path):
 def rounding(n):
     if (type(n)==str) or (np.isnan(n)):
         return str('-')
-    elif ((abs(n)>1e-5) and (abs(n)<1e5)):
+    elif ((abs(n)>1e-4) and (abs(n)<1e4)):
         try:
             sgn = '-' if n<0 else ''
             num = format(abs(n)-int(abs(n)),'f')

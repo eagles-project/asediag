@@ -136,6 +136,7 @@ class get_plots(object):
         s2 = s1.applymap(lambda x: rounding(x))[0].tolist()
         cbar_ticks=list(map(str,s2))
         cbar_ticks = [i.replace('.0','') if i[-2:]=='.0' else i for i in cbar_ticks]
+        cbar_ticks = [i.rstrip('0') if '.' in i else i for i in cbar_ticks]
         if len(cbar_ticks) > 12:
             cbar_ticks[::2]=['']*len(cbar_ticks[::2])
         else:
