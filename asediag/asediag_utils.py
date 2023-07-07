@@ -182,14 +182,14 @@ class gen_colbar_range(object):
         aagg = np.log10(aagg)
         expo = np.ceil(aagg)
         s1 = np.array([-100,-70,-50,-20,-10,-5,-2,-1,1,2,5,10,20,50,70,100])*(10**(expo)/1e3)
-        return s1
+        return list(s1)
     
     def vmap(self):
         s1=[0.05,0.1,0.2,0.5,1,2,5,10,20,50,100,200,500,1000]
         aagg=(np.max(self.v1).values+np.max(self.v2).values)/2
         aagg=np.log10(aagg)
         s1=np.array(s1)*(10**(np.round(aagg-2.7)))
-        return s1
+        return list(s1)
     
     def vdiff(self):
         s2=[-100,-50.,-20,-10,-5,-2,2,5,10,20,50,100]
@@ -199,7 +199,7 @@ class gen_colbar_range(object):
             aagg=0.25*(abs(np.max(self.diff).values)+abs(np.min(self.diff).values))/2
         aagg=np.log10(aagg)
         s1 = np.array(s2)*(10**(np.round(aagg-1.7)))*10
-        return s1
+        return list(s1)
 
 def get_vertint(vdata,ha,p0,hb,ps,grav,fact):
     ## calc. dp
