@@ -8,7 +8,7 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from matplotlib.collections import PolyCollection
 from matplotlib.colors import ListedColormap
 import pandas as pd
-from asediag.asediag_utils import rounding
+from asediag.asediag_utils import rounding, gen_colbar_range
 from asediag.gen_scrip_file import gen_scrip
     
 class get_plots(object):
@@ -33,7 +33,7 @@ class get_plots(object):
         self.cbe = kwargs.get('cbe',-1)
         self.cbi = kwargs.get('cbi',1)
         self.verts = kwargs.get('verts',None)
-        self.rr = kwargs.get('levels',[0.,0.000274,0.00307,0.0214,0.0793,.198,.392,.682,1.13,5.,10.,32.9])
+        self.rr = kwargs.get('levels',None)
     
         
     def get_verts(self):
@@ -85,6 +85,10 @@ class get_plots(object):
             kwd_pcolormesh['lw'] = 0.01
         plt.rcParams['font.family'] = 'STIXGeneral'
         ## levels
+        if self.rr == None:
+            var1 = self.var.stack(grid=self.var.dims)
+            var1 = var1.dropna("grid", how="all")
+            self.rr = gen_colbar_range(v1=var1,v2=var1).hmap()
         ranges=self.rr
         self.ax.set_global()
         clen=len(np.arange(0,257)[self.cbs:self.cbe:self.cbi])
