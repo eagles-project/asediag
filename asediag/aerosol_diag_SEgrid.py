@@ -732,7 +732,7 @@ def getVmap(data,ranges,ax,unit,cm=plt.cm.jet,cbs=0,cbi=1,cbe=-1):
         cmap = cm
         print('Cannot subscript Segmented Colormap!')
     x,y = np.meshgrid(data['lat'],data['lev'])
-    im=ax.contourf(x,y,data[:],cmap=cmap,levels=ranges,norm=matplotlib.colors.BoundaryNorm(boundaries=ranges, ncolors=clen))
+    im=ax.contourf(x,y,data[:],cmap=cmap,levels=ranges,norm=matplotlib.colors.BoundaryNorm(boundaries=ranges, ncolors=clen),extend='both')
     plt.gca().invert_yaxis()
     plt.xlim([-89,88])
     plt.xticks([-60,-30,0,30,60])
@@ -741,12 +741,12 @@ def getVmap(data,ranges,ax,unit,cm=plt.cm.jet,cbs=0,cbi=1,cbe=-1):
     ax.xaxis.set_tick_params(width=1.5,length=5)
     ax.grid( lw=0.5, color='#EBE7E0', alpha=0.5, linestyle='-.')
     ax.tick_params(labelsize=12)
-    cbar=plt.colorbar(im,ticks=ranges,drawedges=True)
+    cbar = plt.colorbar(im,ticks=ranges,drawedges=True,extendrect=True)
     s1 = pd.DataFrame(ranges)
     s2 = s1.applymap(lambda x: rounding(x))[0].tolist()
     cbar_ticks=list(map(str,s2))
     cbar_ticks = [i.replace('.0','') if i[-2:]=='.0' else i for i in cbar_ticks]
-    cbar.ax.set_yticklabels(['']+cbar_ticks[1:-1]+[''],size=12)
+    cbar.ax.set_yticklabels(cbar_ticks,size=12)
     cbar.set_label(label=unit,size=12)
     cbar.outline.set_linewidth(1.5)
     cbar.dividers.set_linewidth(1.5)
