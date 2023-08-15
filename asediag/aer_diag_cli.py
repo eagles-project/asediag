@@ -24,10 +24,12 @@ def main():
     parser.add_argument("-reg", help="select region", default=None)
     parser.add_argument("-land", help="select only land", action='store_true', default=None)
     parser.add_argument("-loc", help="select location", default=None)
-    parser.add_argument("-vlist", help="plot extra variables defined in cli", action='store_true', default=None)
+    parser.add_argument("-vlist", help="plot extra variables defined in configuration", default=None)
+    parser.add_argument("-vunit", help="units of the extra variables defined in configuration", default=None)
     parser.add_argument("-tab", help="get budget tables", action='store_true', default=None)
     parser.add_argument("-prof", help="get zonal mean vertical profile plots", action='store_true', default=None)
-    parser.add_argument("-eprof", help="get zonal mean vertical profile plots", action='store_true', default=None)
+    parser.add_argument("-eprof", help="get zonal mean vertical profile plots for any variables", default=None)
+    parser.add_argument("-gunit", help="units for the extra vertical profile plots", default=None)
     parser.add_argument("-forcing", help="get forcing analysis", action='store_true', default=None)
     parser.add_argument("-hplot", help="mute standard horizontal plots", action='store_true', default=None)
     parser.add_argument("-scrip", help="scrip file", \
@@ -43,25 +45,17 @@ def main():
     lnd = args.land
     local = args.loc
     vl = args.vlist
+    vunit = args.vunit
     tb = args.tab
     profile = args.prof
     extraprof = args.eprof
+    gunit = args.gunit
     hp = args.hplot
     sc = args.scrip
     rf = args.forcing
     case1 = args.cs1
     case2 = args.cs2
     
-    ## Add extra variables and units below here as necessaray
-    vlist = ['AODVIS','AODABS','AODALL','AODBC','AODDUST','AODPOM','AODSO4','AODSOA',\
-        'AODSS','AODMODE1','AODMODE2','AODMODE3','AODMODE4','BURDENBC','BURDENSO4','BURDENDUST','BURDENPOM','BURDENSOA',\
-         'BURDENMOM','BURDENSEASALT','BURDEN1','BURDEN2','BURDEN3','BURDEN4',\
-        'FSNS','FSNSC','FSNT','FSNTC','FLNS','FLNSC','FLNT','FLNTC']
-    vunits = ['[unitless]']*13+['[kg m$^{-2}$]']*11+['[W m$^{-2}$]']*8
-    
-    eprof_list = ['CCN3','CLDLIQ','CLDICE','dgnd_a01','dgnd_a02','dgnd_a03','dgnd_a04',\
-                  'dgnw_a01','dgnw_a02','dgnw_a03','dgnw_a04']
-    gunits = ['[1/cm$^3$]']+['[kg/kg]']*2+['[m]']*8
     ## Add extra variables and units above here as necessaray
     if case1 == None:
         case1 = path1.strip().split('/')[-3]
@@ -131,6 +125,9 @@ def main():
         print('\nPlotting is muted\n')
 
     if vl != None:
+        vlist = vl.split(',')
+        vunits = vunit.split(',')
+        assert len(vlist) == len(vunits), "List of variables and units should have the same length!"
         print('getting data\n')
         print(path1,path2)
         print('\nPlotting all the extra variables\n')
@@ -179,6 +176,9 @@ def main():
                 process.join()
                 
     if extraprof != None:
+        eprof_list = extraprof.split(',')
+        gunits = gunit.split(',')
+        assert len(eprof_list) == len(gunits), "List of variables and units should have the same length!"
         html = get_html("season_lathgt.png","Vertical contour plots of zonal means")
         with open(path+'/set01/index.html','w') as file:
             file.write(html)

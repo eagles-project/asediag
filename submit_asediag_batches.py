@@ -35,6 +35,14 @@ diags = config.get('CMD','diags')
 region = config.get('CMD','region')
 case1 = config.get('CMD','case1')
 case2 = config.get('CMD','case2')
+vlist = config.get('EXTRA','vlist')
+vlist = vlist.replace('\n','').replace(' ','')
+vunit = config.get('EXTRA','vunit')
+vunit = vunit.replace('\n','').replace(' ','')
+plist = config.get('EXTRA','plist')
+plist = plist.replace('\n','').replace(' ','')
+punit = config.get('EXTRA','punit')
+punit = punit.replace('\n','').replace(' ','')
 
 if case1==None:
     case1 = inDirectory1.strip().split('/')[-3]
@@ -64,9 +72,10 @@ with open(path+'/aerosol.html','w') as file:
     
 ## Dictionary for different diagnostics and their relevant command line inputs
 ## For more info check the with help command: python asediag.py -h
-itemDict = {'extra':' -vlist -hplot','tables':' -tab -hplot','forcings':' -forcing -hplot',\
-            'surface':' -pval 0','200':' -pval 200','500':' -pval 500','850':' -pval 850',\
-                'zonal':' -prof -hplot','extraprofs':' -eprof -hplot','latlon':''}
+itemDict = {'extra':' -vlist '+vlist+' -vunit '+vunit+' -hplot','tables':' -tab -hplot',\
+            'forcings':' -forcing -hplot','surface':' -pval 0','200':' -pval 200',\
+            '500':' -pval 500','850':' -pval 850','zonal':' -prof -hplot',\
+            'extraprofs':' -eprof '+plist+' -gunit '+punit+' -hplot','latlon':''}
 
 for item in diags.split(','):
     ## defines this script path (i.e. asediag)
