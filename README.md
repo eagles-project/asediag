@@ -64,6 +64,29 @@ scrip_file = /compyfs/www/hass877/share/emis_data/DECK120_to_SE/ne30pg2_SCRIP.nc
 ## Available diags options: latlon,tables,extra,forcings,surface,200,500,850,zonal
 ## Each diag option will be submitted to a different node
 diags = latlon,tables,extra,forcings,surface,200,500,850,zonal
+
+[EXTRA]
+## This section contains the extra variables (beyond aerosol budget)
+## Any relevant output variables can be mentioned here
+## vlist is activated with the `extra` diagnostics feature 
+## Variables in the vlist will be part of the horizontal contour plots
+## vlist variables should can not have the `lev` dim
+vlist = AODVIS,AODABS,AODALL,AODBC,AODDUST,AODPOM,AODSO4,AODSOA,AODSS,AODMODE1,
+        AODMODE2,AODMODE3,AODMODE4,BURDENBC,BURDENSO4,BURDENDUST,BURDENPOM,
+        BURDENSOA,BURDENMOM,BURDENSEASALT,BURDEN1,BURDEN2,BURDEN3,BURDEN4
+## Associated units for the variables in vlist
+## Note: make sure length(vlist) == length(vunits)
+vunit = unitless,unitless,unitless,unitless,unitless,unitless,unitless,unitless,
+        unitless,unitless,unitless,unitless,unitless,kg m$^{-2}$,kg m$^{-2}$,
+        kg m$^{-2}$,kg m$^{-2}$,kg m$^{-2}$,kg m$^{-2}$,kg m$^{-2}$,kg m$^{-2}$,
+        kg m$^{-2}$,kg m$^{-2}$,kg m$^{-2}$
+## plist is activated with the `extraprofs` diagnostics feature 
+## Variables in the plist will be part of the Vertical contour plots of zonal means
+## plist variables must have the `lev` dim
+plist = CCN3,CLDLIQ,CLDICE,dgnd_a01,dgnd_a02,dgnd_a03,dgnd_a04,dgnw_a01,dgnw_a02,
+        dgnw_a03,dgnw_a04
+## Associated units for the variables in plist
+punit = 1/cm$^3$,kg/kg,kg/kg,m,m,m,m,m,m,m,m
 ## Run this config by: python submit_asediag_batches.py
 ```
 
