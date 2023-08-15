@@ -66,7 +66,7 @@ with open(path+'/aerosol.html','w') as file:
 ## For more info check the with help command: python asediag.py -h
 itemDict = {'extra':' -vlist -hplot','tables':' -tab -hplot','forcings':' -forcing -hplot',\
             'surface':' -pval 0','200':' -pval 200','500':' -pval 500','850':' -pval 850',\
-                'zonal':' -prof -hplot','latlon':''}
+                'zonal':' -prof -hplot','extraprofs':' -eprof -hplot','latlon':''}
 
 for item in diags.split(','):
     ## defines this script path (i.e. asediag)

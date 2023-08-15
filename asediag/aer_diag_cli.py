@@ -27,6 +27,7 @@ def main():
     parser.add_argument("-vlist", help="plot extra variables defined in cli", action='store_true', default=None)
     parser.add_argument("-tab", help="get budget tables", action='store_true', default=None)
     parser.add_argument("-prof", help="get zonal mean vertical profile plots", action='store_true', default=None)
+    parser.add_argument("-eprof", help="get zonal mean vertical profile plots", action='store_true', default=None)
     parser.add_argument("-forcing", help="get forcing analysis", action='store_true', default=None)
     parser.add_argument("-hplot", help="mute standard horizontal plots", action='store_true', default=None)
     parser.add_argument("-scrip", help="scrip file", \
@@ -44,6 +45,7 @@ def main():
     vl = args.vlist
     tb = args.tab
     profile = args.prof
+    extraprof = args.eprof
     hp = args.hplot
     sc = args.scrip
     rf = args.forcing
@@ -56,6 +58,10 @@ def main():
          'BURDENMOM','BURDENSEASALT','BURDEN1','BURDEN2','BURDEN3','BURDEN4',\
         'FSNS','FSNSC','FSNT','FSNTC','FLNS','FLNSC','FLNT','FLNTC']
     vunits = ['[unitless]']*13+['[kg m$^{-2}$]']*11+['[W m$^{-2}$]']*8
+    
+    eprof_list = ['CCN3','CLDLIQ','CLDICE','dgnd_a01','dgnd_a02','dgnd_a03','dgnd_a04',\
+                  'dgnw_a01','dgnw_a02','dgnw_a03','dgnw_a04']
+    gunits = ['[1/cm$^3$]']+['[kg/kg]']*2+['[m]']*8
     ## Add extra variables and units above here as necessaray
     if case1 == None:
         case1 = path1.strip().split('/')[-3]
@@ -171,6 +177,31 @@ def main():
                 processes.append(p)
             for process in processes:
                 process.join()
+                
+    if extraprof != None:
+        html = get_html("season_lathgt.png","Vertical contour plots of zonal means")
+        with open(path+'/set01/index.html','w') as file:
+            file.write(html)
+        print('getting data\n')
+        print(path1,path2)
+        print('\nProducing profiles can take some time in SE-grid\nbinning data . . .\n')
+        aa=gather_ProfData(path1,eprof_list,case1,model,lnd,sv=True)
+        bb=gather_ProfData(path2,eprof_list,case2,model,lnd,sv=True)
+        aa[0].load()
+        bb[0].load()
+        print('Loaded data\n')
+        diff = bb[0]-aa[0]
+        rel = (diff/abs(aa[0]))*100
+        processes=[]
+        for ind,var in product([0,1,2],aa[1]):
+            unit = gunits[eprof_list.index(var)]
+            p = mp.Process(target=get_vert_profiles,args=[aa[0][var],bb[0][var],diff[var],rel[var],var,ind,case1,case2,\
+                                    ],kwargs={'path':path+'/set01','gunit':unit})
+            p.start()
+            processes.append(p)
+        for process in processes:
+            process.join()
+
     if tb != None:
         aer_list = ['bc','so4','dst','mom','pom','ncl','soa','num','DMS','SO2','H2SO4']
         print('\nProducing all budget tables')

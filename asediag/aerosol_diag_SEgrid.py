@@ -164,6 +164,42 @@ def get_vplots(path,case,ts,aer,mod='eam'):
         vdata = vdata.mean(dim='lon')
     return vdata,var_vars+[aer]
 
+def get_svplots(path,case,ts,var_vars,mod='eam'):
+    ## reading data as xarray
+    try:
+        data = xr.open_mfdataset(path+case+'.'+mod+'.'+ts+'.*_climo.nc')
+        lon = data['lon']
+        lon[lon > 180.] -= 360.
+    except:
+        data = xr.open_mfdataset(path+case+'*'+ts+'*_climo.nc').isel(time=0)
+        lon = xr.where(data.lon > 180,data.lon-360,data.lon)
+        lon = lon.assign_coords(lon=lon.values)
+        data['lon'] = lon
+        lon = lon.sortby(lon)
+        data = data.sortby('lon')
+    lat = data['lat']
+    fact = 1
+    if 'year' in data.coords:
+        data = data.rename({'year':'season'})
+    print('Extra variables:',var_vars)
+    vdata = data[var_vars]
+    vdata = vdata*fact
+    ## getting total
+    if 'ncol' in data.dims:
+        ll=data['lat'].round().values.tolist()
+        all_ll=ll*len(data.lev)
+        dd=vdata.to_dataframe()
+        dd=dd.drop(columns=['season'])
+        dd['lat']=all_ll
+        dd=dd.groupby(['lev','lat']).mean()
+        ## resampling to lower res (2 deg)
+        dd = dd.rolling(2).mean()
+        dd = dd.iloc[::2,:]
+        vdata=dd.to_xarray()
+    else:
+        vdata = vdata.mean(dim='lon')
+    return vdata,var_vars
+
 def get_singleV_hplots(path,case,ts,var,fact=1,vertinit=None,pval='radiation',mod='eam'):
     ## reading data as xarray
     try:
@@ -487,12 +523,16 @@ def gather_data(path,aer,case,mod,plev=None,sv=None,fact=1,vertinit=None,unit=No
                 unit = "[ug $m^{-3}$]"
     return data_combined,m_combined,orig[2],orig[3],unit,orig[4],orig[5]
 
-def gather_ProfData(path,aer,case,mod):
+def gather_ProfData(path,aer,case,mod,sv=None):
     ss = ['ANN','DJF','JJA']
     dlist = []
     for s in ss:
-        orig=get_vplots(path,case,s,aer,mod=mod)
-        dlist.append(orig[0])
+        if sv != None:
+            orig=get_svplots(path,case,s,aer,mod=mod)
+            dlist.append(orig[0])
+        else:
+            orig=get_vplots(path,case,s,aer,mod=mod)
+            dlist.append(orig[0])
     data_combined=xr.concat(dlist,"season")
         
     return data_combined,orig[1]
@@ -753,7 +793,7 @@ def getVmap(data,ranges,ax,unit,cm=plt.cm.jet,cbs=0,cbi=1,cbe=-1):
     plt.setp(ax.spines.values(),lw=1.5)
     plt.ylabel('Pressure [hPa]',fontsize=15)
 
-def get_vert_profiles(data1,data2,diff,rel,var,ind,case1,case2,path=None):
+def get_vert_profiles(data1,data2,diff,rel,var,ind,case1,case2,path=None,gunit=None):
     dd1=data1.isel(season=ind)
     dd2=data2.isel(season=ind)
     rr=gen_colbar_range(v1=dd1,v2=dd2).vmap()
@@ -766,10 +806,11 @@ def get_vert_profiles(data1,data2,diff,rel,var,ind,case1,case2,path=None):
     titles = ['Control Case','Test Case','Test Case'+' $-$ '+'Control Case','Relative diff (%)']
     colBars = [rr,rr,rr_diff,rr_rel]
     colMaps = [amwg256_map,amwg256_map,BlueWhiteOrangeRed_map,BlueWhiteOrangeRed_map]
-    if 'num' in var:
-        gunit = '[# cm$^{-3}$]'
-    else:
-        gunit = '[ug m$^{-3}$]'
+    if gunit == None:
+        if 'num' in var:
+            gunit = '[# cm$^{-3}$]'
+        else:
+            gunit = '[ug m$^{-3}$]'
     units = [gunit,gunit,gunit,'[%]']
     varbls = [dd1,dd2,ee,ff]
 
