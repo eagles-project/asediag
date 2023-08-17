@@ -179,7 +179,7 @@ def main():
         eprof_list = extraprof.split(',')
         gunits = gunit.split(',')
         assert len(eprof_list) == len(gunits), "List of variables and units should have the same length!"
-        html = get_html("season_lathgt.png","Vertical contour plots of zonal means")
+        html = get_html("season_lathgt.png","Vertical contour plots of zonal means",extra=eprof_list)
         with open(path+'/set01/index.html','w') as file:
             file.write(html)
         print('getting data\n')
