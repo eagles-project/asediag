@@ -8,7 +8,7 @@ import cartopy.crs as crs
 from asediag.nclCols import amwg256_map, BlueWhiteOrangeRed_map
 from asediag.aerdiag_plots import get_plots
 from asediag.asediag_utils import rounding, get_html_table, get_vertint
-from asediag.asediag_utils import gen_colbar_range
+from asediag.asediag_utils import gen_colbar_range, get_local, get_plocal, get_nearestlatlon
 import matplotlib
 import fnmatch
 from pathlib import Path
@@ -110,7 +110,7 @@ def get_hplots(path,case,ts,aer,plev=None,mod='eam',reg=None,land=None):
 
     return vdata,mean,var_vars+[aer],pval,lon,lat
 
-def get_vplots(path,case,ts,aer,mod='eam'):
+def get_vplots(path,case,ts,aer,mod='eam',lats=None,lons=None):
     ## reading data as xarray
     try:
         data = xr.open_mfdataset(path+case+'.'+mod+'.'+ts+'.*_climo.nc')
@@ -124,6 +124,7 @@ def get_vplots(path,case,ts,aer,mod='eam'):
         lon = lon.sortby(lon)
         data = data.sortby('lon')
     lat = data['lat']
+            
     fact = 1e9
     factaa = 1.01325e5 / 8.31446261815324 / 273.15 * 28.9647 / 1.e9   # kg-air/cm3-air
     factbb = factaa * 1.e15  # ug-air/m3-air
@@ -149,6 +150,20 @@ def get_vplots(path,case,ts,aer,mod='eam'):
     vdata = vdata*fact
     ## getting total
     vdata[aer] = vdata.to_array().sum('variable')
+    
+    lts = []
+    lns = []
+    for lat1,lon1 in zip(lats,lons):
+        lt1,lt2,ln1,ln2 = get_nearestlatlon(lon1,lat1,lon,lat)
+        lts.append(lt1)
+        lns.append(ln1)
+    pdata = []
+    for ln,lt in zip(lns,lts):
+        var1 = vdata.sel(time=data.time[0]).where((lat==lt) & (lon==ln))
+        var1 = var1.stack(grid=var1.dims)
+        var1 = var1.dropna("grid", how="all")
+        pdata.append(var1)
+    
     if 'ncol' in data.dims:
         ll=data['lat'].round().values.tolist()
         all_ll=ll*len(data.lev)
@@ -162,7 +177,7 @@ def get_vplots(path,case,ts,aer,mod='eam'):
         vdata=dd.to_xarray()
     else:
         vdata = vdata.mean(dim='lon')
-    return vdata,var_vars+[aer]
+    return vdata,var_vars+[aer],pdata
 
 def get_svplots(path,case,ts,var_vars,mod='eam'):
     ## reading data as xarray
@@ -523,19 +538,22 @@ def gather_data(path,aer,case,mod,plev=None,sv=None,fact=1,vertinit=None,unit=No
                 unit = "[ug $m^{-3}$]"
     return data_combined,m_combined,orig[2],orig[3],unit,orig[4],orig[5]
 
-def gather_ProfData(path,aer,case,mod,sv=None):
+def gather_ProfData(path,aer,case,mod,sv=None,lats=None,lons=None):
     ss = ['ANN','DJF','JJA']
     dlist = []
+    plist = []
     for s in ss:
         if sv != None:
             orig=get_svplots(path,case,s,aer,mod=mod)
             dlist.append(orig[0])
         else:
-            orig=get_vplots(path,case,s,aer,mod=mod)
+            orig=get_vplots(path,case,s,aer,mod=mod,lats=lats,lons=lons)
             dlist.append(orig[0])
+            plist.append(orig[2])
     data_combined=xr.concat(dlist,"season")
+    pdata_combined=xr.concat(plist,"season")
         
-    return data_combined,orig[1]
+    return data_combined,orig[1],pdata_combined
 
 def get_latlon(reg):
     regions = {'CONUS':'24.74 49.34 -124.78 -66.95',\
@@ -556,26 +574,6 @@ def get_latlon(reg):
     lat2 = float(regions[reg].split(' ')[1])
     lon1 = float(regions[reg].split(' ')[2])
     lon2 = float(regions[reg].split(' ')[3])
-    return lat1,lat2,lon1,lon2
-
-def get_local(reg):
-    loclatlon = {'SGP':'36.605 -97.485',\
-               'ENA':'39.091 -28.026',\
-               'NSA':'71.322 -156.615',\
-               'TCAP':'42.5 -72',\
-               'TWP':'-2.06 147.425'}
-    lat1 = float(loclatlon[reg].split(' ')[0])
-    lon1 = float(loclatlon[reg].split(' ')[1])
-    return lat1,lon1
-
-def get_nearestlatlon(lon1,lat1,lon,lat):
-    try:
-        ind=np.argmin((lon-lon1)**2+(lat.values-lat1)**2)
-        lat1,lat2,lon1,lon2 = lat[ind],lat[ind],lon[ind],lon[ind]
-    except:
-        RLLlon = lon.sel(lon=lon1, method='nearest')
-        RLLlat = lat.sel(lat=lat1, method='nearest')
-        lat1,lat2,lon1,lon2 = RLLlat,RLLlat,RLLlon,RLLlon
     return lat1,lat2,lon1,lon2
 
 def forcing_plots(plot_vars,path,area,season,plane,lon1,lon2,lat1,lat2,scrip):

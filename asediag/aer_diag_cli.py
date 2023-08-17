@@ -8,7 +8,7 @@ import shutil
 
 from asediag.aerosol_diag_SEgrid import get_forcing_df, gather_ProfData, get_vert_profiles
 from asediag.aerosol_diag_SEgrid import gather_data, get_map, get_all_tables
-from asediag.asediag_utils import get_html
+from asediag.asediag_utils import get_html, get_plocal
 
 def main():
 
@@ -55,6 +55,7 @@ def main():
     rf = args.forcing
     case1 = args.cs1
     case2 = args.cs2
+    
     
     ## Add extra variables and units above here as necessaray
     if case1 == None:
@@ -151,16 +152,17 @@ def main():
                     scrip=sc,path=path+'/set02',reg=region)
 
     if profile != None:
+        sites,lats,lons = get_plocal(local)
         aer_list = ['bc','so4','dst','mom','pom','ncl','soa','num','DMS','SO2','H2SO4']
-        html = get_html("season_lathgt.png","Vertical contour plots of zonal means")
+        html = get_html("season_lathgt.png","Vertical contour plots of zonal means",locations=sites)
         with open(path+'/set01/index.html','w') as file:
             file.write(html)
         for aer in aer_list[:]:
             print('getting data\n')
             print(path1,path2)
             print('\nProducing profiles can take some time in SE-grid\nbinning data . . .\n')
-            aa=gather_ProfData(path1,aer,case1,model)
-            bb=gather_ProfData(path2,aer,case2,model)
+            aa=gather_ProfData(path1,aer,case1,model,lats=lats,lons=lons)
+            bb=gather_ProfData(path2,aer,case2,model,lats=lats,lons=lons)
             aa[0].load()
             bb[0].load()
             print('Loaded data\n')

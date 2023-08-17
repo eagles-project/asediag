@@ -33,6 +33,43 @@ def rounding(n):
     else:
         return '{:.0e}'.format(n)
 
+def get_local(reg):
+    loclatlon = {'SGP':'36.605 -97.485',\
+               'ENA':'39.091 -28.026',\
+               'NSA':'71.322 -156.615',\
+               'TCAP':'42.5 -72',\
+               'TWP':'-2.06 147.425'}
+    lat1 = float(loclatlon[reg].split(' ')[0])
+    lon1 = float(loclatlon[reg].split(' ')[1])
+    return lat1,lon1
+
+def get_plocal(loc):
+    try:
+        bb = loc.split(',')
+        names = []
+        lats = []
+        lons = []
+        for local in bb:
+            ll = local.strip().split(':')
+            names.append(ll[0])
+            lats.append(float(ll[1]))
+            lons.append(float(ll[2]))
+    except:
+        lats = None
+        lons = None
+        names = []
+    return names,lats,lons
+
+def get_nearestlatlon(lon1,lat1,lon,lat):
+    try:
+        ind=np.argmin([(lon-lon1)**2+(lat-lat1)**2])
+        lat1,lat2,lon1,lon2 = lat[ind],lat[ind],lon[ind],lon[ind]
+    except:
+        RLLlon = lon.sel(lon=lon1, method='nearest')
+        RLLlat = lat.sel(lat=lat1, method='nearest')
+        lat1,lat2,lon1,lon2 = RLLlat,RLLlat,RLLlon,RLLlon
+    return lat1,lat2,lon1,lon2
+
 def group_duplicate_index(df):
     a = df.values
     sidx = np.lexsort(a.T)
@@ -43,7 +80,7 @@ def group_duplicate_index(df):
     I = df.index[sidx].tolist()
     return [I[i:j] for i,j in zip(idx[::2],idx[1::2]+1)]
 
-def get_html(form,title,extra=[]):
+def get_html(form,title,extra=[],locations=[]):
     df = pd.DataFrame()
     listofvs = ['bc','bc_a1', 'bc_a3', 'bc_a4', 'bc_c1', 'bc_c3', 'bc_c4',\
                'so4','so4_a1', 'so4_a2', 'so4_a3', 'so4_c1', 'so4_c2', 'so4_c3',\
@@ -54,18 +91,25 @@ def get_html(form,title,extra=[]):
                'soa','soa_a1', 'soa_a2', 'soa_a3', 'soa_c1', 'soa_c2', 'soa_c3',\
                'num','num_a1', 'num_a2', 'num_a3', 'num_a4', 'num_c1', 'num_c2', 'num_c3', 'num_c4',\
                'SO2','DMS','H2SO4']+extra
-    spfull = {'bc':'<a id="Black Carbon"><font color="red"><strong>Black Carbon</string></font>','so4':'<a id="Sulfate"><font color="red"><strong>Sulfate</string></font>','dst':'<font color="red"><strong>Dust</string></font>','mom':'<font color="red"><strong>Marine organic matter</string></font>',\
-             'pom':'<font color="red"><strong>Primary organic matter</string></font>','ncl':'<font color="red"><strong>Sea salt</string></font>','soa':'<font color="red"><strong>Secondary organic aerosol</string></font>',\
-             'num':'<a id="Aerosol number"><font color="red"><strong>Aerosol number</string></font>',\
-             'SO2':'<font color="red"><strong>SO2</string></font>',\
-             'DMS':'<font color="red"><strong>DMS</string></font>',\
-             'H2SO4':'<font color="red"><strong>H2SO4</string></font>'}
+    spfull = {'bc':'<a id="Black Carbon"><font color="red"><strong>Black Carbon</string></font>',\
+              'so4':'<a id="Sulfate"><font color="red"><strong>Sulfate</string></font>',\
+              'dst':'<font color="red"><strong>Dust</string></font>',\
+              'mom':'<font color="red"><strong>Marine organic matter</string></font>',\
+              'pom':'<font color="red"><strong>Primary organic matter</string></font>',\
+              'ncl':'<font color="red"><strong>Sea salt</string></font>',\
+              'soa':'<font color="red"><strong>Secondary organic aerosol</string></font>',\
+              'num':'<a id="Aerosol number"><font color="red"><strong>Aerosol number</string></font>',\
+              'SO2':'<font color="red"><strong>SO2</string></font>',\
+              'DMS':'<font color="red"><strong>DMS</string></font>',\
+              'H2SO4':'<font color="red"><strong>H2SO4</string></font>'}
     df['Variable']=listofvs
     df['DJF']=df['Variable'].apply(lambda x: '<a href="{}_{}">DJF</a>'.format(x,form.replace('season','DJF')))
     df['JJA']=df['Variable'].apply(lambda x: '<a href="{}_{}">JJA</a>'.format(x,form.replace('season','JJA')))
     df['ANN']=df['Variable'].apply(lambda x: '<a href="{}_{}">ANN</a>'.format(x,form.replace('season','ANN')))
+    for loc in locations:
+        df[loc]=df['Variable'].apply(lambda x: '<a href="{}_{}">Profile</a>'.format(x,form.replace('season',loc+'_prof')))
     df['Variable']=df['Variable'].map(spfull).fillna(df['Variable'])
-    df.columns = ['Variable','','Seasons',' ']
+    df.columns = ['Variable','','Seasons',' ']+locations
     styler = df.style
     styler=styler.set_caption(title).set_table_styles([
         {'selector':'caption',

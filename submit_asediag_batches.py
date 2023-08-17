@@ -43,6 +43,7 @@ plist = config.get('EXTRA','plist')
 plist = plist.replace('\n','').replace(' ','')
 punit = config.get('EXTRA','punit')
 punit = punit.replace('\n','').replace(' ','')
+loc = config.get('EXTRA','ProfLoc')
 
 if case1==None:
     case1 = inDirectory1.strip().split('/')[-3]
@@ -103,6 +104,8 @@ for item in diags.split(','):
         filedata = filedata.replace('<wallMin>',walltime)
         filedata = filedata.replace('<region>',region)
         filedata = filedata.replace('<scrip_file>','<scrip_file>'+itemDict[item])
+        if ((item=='zonal') or (item=='extraprofs')) and (((loc!=None) and loc!='')):
+            filedata = filedata.replace('<scrip_file>'+itemDict[item],'<scrip_file>'+itemDict[item]+' -loc '+loc)          
         filedata = filedata.replace('<scrip_file>',scrip_file)
     ## writing out to out directory
     with open(path+'/get_sediag_'+item+'.sh','w') as file:
