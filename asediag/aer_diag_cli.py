@@ -7,7 +7,7 @@ import pkg_resources
 import shutil
 
 from asediag.aerosol_diag_SEgrid import get_forcing_df, gather_ProfData, get_vert_profiles
-from asediag.aerosol_diag_SEgrid import gather_data, get_map, get_all_tables
+from asediag.aerosol_diag_SEgrid import gather_data, get_map, get_all_tables, get_local_profiles
 from asediag.asediag_utils import get_html, get_plocal
 
 def main():
@@ -168,6 +168,15 @@ def main():
             print('Loaded data\n')
             diff = bb[0]-aa[0]
             rel = (diff/abs(aa[0]))*100
+            
+            for i in range(len(sites)):
+                d1 = aa[2].isel(location=i)
+                d2 = bb[2].isel(location=i)
+                ddiff = d2 - d1
+                drel = (ddiff/abs(d1))*100
+                for var in aa[1]:
+                    get_local_profiles(d1[var],d2[var],ddiff[var],drel[var],var,case1,case2,sites[i],path=path+'/set01')
+
             processes=[]
             for ind,var in product([0,1,2],aa[1]):
                 p = mp.Process(target=get_vert_profiles,args=[aa[0][var],bb[0][var],diff[var],rel[var],var,ind,case1,case2,\
@@ -178,22 +187,32 @@ def main():
                 process.join()
                 
     if extraprof != None:
+        sites,lats,lons = get_plocal(local)
         eprof_list = extraprof.split(',')
         gunits = gunit.split(',')
         assert len(eprof_list) == len(gunits), "List of variables and units should have the same length!"
-        html = get_html("season_lathgt.png","Vertical contour plots of zonal means",extra=eprof_list)
+        html = get_html("season_lathgt.png","Vertical contour plots of zonal means",extra=eprof_list,locations=sites)
         with open(path+'/set01/index.html','w') as file:
             file.write(html)
         print('getting data\n')
         print(path1,path2)
         print('\nProducing profiles can take some time in SE-grid\nbinning data . . .\n')
-        aa=gather_ProfData(path1,eprof_list,case1,model,lnd,sv=True)
-        bb=gather_ProfData(path2,eprof_list,case2,model,lnd,sv=True)
+        aa=gather_ProfData(path1,eprof_list,case1,model,sv=True,lats=lats,lons=lons)
+        bb=gather_ProfData(path2,eprof_list,case2,model,sv=True,lats=lats,lons=lons)
         aa[0].load()
         bb[0].load()
         print('Loaded data\n')
         diff = bb[0]-aa[0]
         rel = (diff/abs(aa[0]))*100
+
+        for i in range(len(sites)):
+            d1 = aa[2].isel(location=i)
+            d2 = bb[2].isel(location=i)
+            ddiff = d2 - d1
+            drel = (ddiff/abs(d1))*100
+            for var in aa[1]:
+                get_local_profiles(d1[var],d2[var],ddiff[var],drel[var],var,case1,case2,sites[i],path=path+'/set01')
+
         processes=[]
         for ind,var in product([0,1,2],aa[1]):
             unit = gunits[eprof_list.index(var)]

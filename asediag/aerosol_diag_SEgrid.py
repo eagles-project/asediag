@@ -159,10 +159,14 @@ def get_vplots(path,case,ts,aer,mod='eam',lats=None,lons=None):
         lns.append(ln1)
     pdata = []
     for ln,lt in zip(lns,lts):
-        var1 = vdata.sel(time=data.time[0]).where((lat==lt) & (lon==ln))
+        var1 = vdata.where((lat==lt) & (lon==ln)).copy()
         var1 = var1.stack(grid=var1.dims)
         var1 = var1.dropna("grid", how="all")
+        levels = var1.lev.values
+        var1 = var1.drop_vars('lev')
+        var1 = var1.assign_coords(grid=levels)
         pdata.append(var1)
+    local_data = xr.concat(pdata,dim="location")
     
     if 'ncol' in data.dims:
         ll=data['lat'].round().values.tolist()
@@ -177,9 +181,9 @@ def get_vplots(path,case,ts,aer,mod='eam',lats=None,lons=None):
         vdata=dd.to_xarray()
     else:
         vdata = vdata.mean(dim='lon')
-    return vdata,var_vars+[aer],pdata
+    return vdata,var_vars+[aer],local_data
 
-def get_svplots(path,case,ts,var_vars,mod='eam'):
+def get_svplots(path,case,ts,var_vars,mod='eam',lats=None,lons=None):
     ## reading data as xarray
     try:
         data = xr.open_mfdataset(path+case+'.'+mod+'.'+ts+'.*_climo.nc')
@@ -199,6 +203,24 @@ def get_svplots(path,case,ts,var_vars,mod='eam'):
     print('Extra variables:',var_vars)
     vdata = data[var_vars]
     vdata = vdata*fact
+
+    lts = []
+    lns = []
+    for lat1,lon1 in zip(lats,lons):
+        lt1,lt2,ln1,ln2 = get_nearestlatlon(lon1,lat1,lon,lat)
+        lts.append(lt1)
+        lns.append(ln1)
+    pdata = []
+    for ln,lt in zip(lns,lts):
+        var1 = vdata.where((lat==lt) & (lon==ln)).copy()
+        var1 = var1.stack(grid=var1.dims)
+        var1 = var1.dropna("grid", how="all")
+        levels = var1.lev.values
+        var1 = var1.drop_vars('lev')
+        var1 = var1.assign_coords(grid=levels)
+        pdata.append(var1)
+    local_data = xr.concat(pdata,dim="location")
+
     ## getting total
     if 'ncol' in data.dims:
         ll=data['lat'].round().values.tolist()
@@ -213,7 +235,7 @@ def get_svplots(path,case,ts,var_vars,mod='eam'):
         vdata=dd.to_xarray()
     else:
         vdata = vdata.mean(dim='lon')
-    return vdata,var_vars
+    return vdata,var_vars,local_data
 
 def get_singleV_hplots(path,case,ts,var,fact=1,vertinit=None,pval='radiation',mod='eam'):
     ## reading data as xarray
@@ -544,8 +566,9 @@ def gather_ProfData(path,aer,case,mod,sv=None,lats=None,lons=None):
     plist = []
     for s in ss:
         if sv != None:
-            orig=get_svplots(path,case,s,aer,mod=mod)
+            orig=get_svplots(path,case,s,aer,mod=mod,lats=lats,lons=lons)
             dlist.append(orig[0])
+            plist.append(orig[2])
         else:
             orig=get_vplots(path,case,s,aer,mod=mod,lats=lats,lons=lons)
             dlist.append(orig[0])
@@ -833,6 +856,47 @@ def get_vert_profiles(data1,data2,diff,rel,var,ind,case1,case2,path=None,gunit=N
     ## Saving figure
     plt.savefig(str(path)+'/'+var+'_'+ss[ind]+'_lathgt.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
 
+
+def get_local_profiles(data1,data2,diff,rel,var,case1,case2,loc,path=None,gunit=None):
+    if gunit == None:
+        if 'num' in var:
+            gunit = '[# cm$^{-3}$]'
+        else:
+            gunit = '[ug m$^{-3}$]'
+        units = [gunit,gunit,gunit,'[%]']
+    
+    varbls = [data1,data2,diff,rel]
+    titles = ['Control Case','Test Case','Test Case'+' $-$ '+'Control Case','Relative diff (%)']
+
+    fig = plt.figure(figsize=(14,14))
+
+    for i,u,vals,t in zip([1,2,3,4],units,varbls,titles):
+        ax=plt.subplot(220+i)
+        plt.plot(vals.isel(season=0),vals['grid'],color=(0.8705882352941177, 0.5607843137254902, 0.0196078431372549),label='ANN')
+        plt.plot(vals.isel(season=1),vals['grid'],color='gray',label='DJF')
+        plt.plot(vals.isel(season=2),vals['grid'],color='gray',label='JJA',linestyle='--')
+        ranges = list(plt.xticks()[0])
+        s1 = pd.DataFrame(ranges)
+        s2 = s1.applymap(lambda x: rounding(x))[0].tolist()
+        cbar_ticks=list(map(str,s2))
+        plt.xticks(ranges,cbar_ticks)
+        plt.gca().invert_yaxis()
+        ax.yaxis.set_tick_params(width=1.5,length=5)
+        ax.xaxis.set_tick_params(width=1.5,length=5)
+        ax.grid( lw=0.5, color='#EBE7E0', alpha=0.5, linestyle='-.')
+        ax.tick_params(labelsize=12)
+        plt.setp(ax.spines.values(),lw=1.5)
+        plt.ylabel('Pressure [hPa]',fontsize=15)
+        plt.xlabel(u,fontsize=15)
+        ax.text(0.005,1.03,t,size=15,transform=ax.transAxes)
+        if i==1:
+            plt.legend(fontsize=12)
+            
+    fig.suptitle(r'$\bf{Control\ Case:}$ '+case1+'\n'+\
+                 r'$\bf{Test\ Case:}$ '+case2+'\n'+r'$\bf{Plotting:}$ '+var,\
+                 fontsize=20,horizontalalignment='left',x=0.125,y=0.98)
+    ## Saving figure
+    plt.savefig(str(path)+'/'+var+'_'+loc+'_prof_lathgt.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
     
 def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,lat,scrip=None,reg='Global',path=None,grid=True):
     if reg!=None:
