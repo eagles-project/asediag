@@ -519,7 +519,7 @@ def get_all_tables(ind,aer,path1,path2,case1,case2,path,reg,loc,mod,land):
     if 'year' in cdatase.columns:
         cdatase = cdatase.drop('year', axis=1)
     cdatadiff = cdatase[cdatase.columns[1:]] - cdatadef[cdatase.columns[1:]]
-    cdatarel = (cdatadiff/abs(cdatase[cdatase.columns[1:]]))*100
+    cdatarel = (cdatadiff/abs(cdatadef[cdatase.columns[1:]]))*100
     for col in cdatarel.columns:
         df = pd.DataFrame()
         df['Control Case']=cdatadef[col]
