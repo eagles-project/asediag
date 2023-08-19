@@ -1,67 +1,97 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html lang="en">
+
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<title>Aerosol Diagnostics</title>
-<style type="text/css">
-body p {
-	font-size: 14px;
-}
-body p {
-	font-size: 14pt;
-}
-body p {
-	font-family: Arial, Helvetica, sans-serif;
-}
-.red {
-	color: #F00;
-	font-weight: bold;
-}
-body p {
-	font-family: Arial, Helvetica, sans-serif;
-}
-body p {
-	font-size: 18px;
-}
-.caa {
-	color: #F00;
-	font-weight: bold;
-}
-.aac {
-	color: #00F;
-	font-weight: bold;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aerosol Diagnostics</title>
+    <style type="text/css">
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 16px;
+            padding: 2% 10%;
+            background-color: #F7F7F7;
+        }
+
+        h1 {
+            border-bottom: 2px solid #E0E0E0;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: #333;
+            font-size: 20px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        p, li {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .caa, .red {
+            color: #D32F2F;
+            font-weight: bold;
+        }
+
+        .aac {
+            color: #1976D2;
+            font-weight: bold;
+        }
+
+        a {
+            color: #1976D2;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        li {
+            margin-left: 20px;
+        }
+
+        blockquote {
+            background-color: #FFF;
+            margin-bottom: 20px;
+            margin-left: 0;
+            padding-left: 0;
+            border-left: none;
+        }
+    </style>
 </head>
 
 <body>
-<blockquote>
-  <h1>&nbsp;	</h1>
-  <h1>PNNL Aerosol Diagnostics</h1>
-  <blockquote>
-    <p> Test case: <span class="caa">F20TR_v2_ndg_ERA5_SEdata_NA_RRM</span></p>
-    <p>Control case: <span class="aac">F20TR_v2_ndg_ERA5_Defdata_NA_RRM</span>  </p>
-  </blockquote>
-  <blockquote>
-    <p><strong>Model-to-Model Comparison</strong></p>
+    <h1>PNNL Aerosol Diagnostics</h1>
+
     <blockquote>
-      <p>	<span class="red">1.</span> <a href="tables/index.html">Aerosol budget</a></p>
-      <p><span class="red">2.</span> <a href="set01/index.html">Vertical contour plots of zonal means</a></p>
-      <p><span class="red">3.</span> <a href="set02/index.html">Horizontal contour plots</a></p>
-      <p><span class="red">4.</span> <a href="set02RF/index.html">Radiative Forcing analysis</a></p>
+        <p>Test case: <span class="caa">F20TR_v2_ndg_ERA5_SEdata_NA_RRM</span></p>
+        <p>Control case: <span class="aac">F20TR_v2_ndg_ERA5_Defdata_NA_RRM</span></p>
     </blockquote>
-    <p>&nbsp;</p>
-    <p><strong>Model-to-Observation Comparison</strong></p>
-    <blockquote>
-      <p><span class="red">1. </span><a href="set03/index.html">Scatter plots</a></p>
-      <p><span class="red">2.</span> <a href="set04/index.html">Vertical profile plots</a></p>
-      <p><span class="red">3.</span> <a href="set05/index.html">Seasonal cycle plots</a></p>
-      <p><span class="red">4.</span> Size distribution plots</p>
-      <p><span class="red">5.</span> Satellite simulator plots</p>
-    </blockquote>
-    <p>&nbsp;</p>
-  </blockquote>
-</blockquote>
-<p>&nbsp;</p>
+
+    <h2>Model-to-Model Comparison</h2>
+    <ul>
+        <li><span class="red">1.</span> <a href="tables/index.html">Aerosol budget</a></li>
+        <li><span class="red">2.</span> <a href="set01/index.html">Vertical contour plots of zonal means</a></li>
+        <li><span class="red">3.</span> <a href="set02/index.html">Horizontal contour plots</a></li>
+        <li><span class="red">4.</span> <a href="set02RF/index.html">Radiative Forcing analysis</a></li>
+    </ul>
+
+    <h2>Model-to-Observation Comparison</h2>
+    <ul>
+        <li><span class="red">1.</span> <a href="set03/index.html">Scatter plots</a></li>
+        <li><span class="red">2.</span> <a href="set04/index.html">Vertical profile plots</a></li>
+        <li><span class="red">3.</span> <a href="set05/index.html">Seasonal cycle plots</a></li>
+        <li><span class="red">4.</span> Size distribution plots</li>
+        <li><span class="red">5.</span> Satellite simulator plots</li>
+    </ul>
 </body>
+
 </html>
