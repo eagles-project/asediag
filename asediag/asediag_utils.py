@@ -137,33 +137,41 @@ def get_html(form,title,extra=[],locations=[],fmt=None):
 def get_html_table(df):
 
     styles = [
-        dict(selector=" ", 
-             props=[("margin","0"),
-                    ("font-family","sans-serif"),
-                    {"font-size","medium"},
-                    {"text-align","right"},
-                    {"width","auto"},
-                    ("border","0"),
+        dict(selector=" ",
+             props=[("margin", "0"),
+                    ("font-family", "sans-serif"),
+                    ("font-size", "medium"),
+                    ("text-align", "right"),
+                    ("width", "auto"),
+                    ("border", "0"),
                        ]),
 
         dict(selector="tbody tr:nth-child(even)",
              props=[("background-color", "white")]),
+
         dict(selector="tbody tr:nth-child(odd)",
              props=[("background-color", "#EDEDED")]),
 
-        dict(selector="td", 
+        # Adding hover effect for even rows
+        dict(selector="tbody tr:nth-child(even):hover",
+             props=[("background-color", "#D3D3D3")]),  # or any other color you prefer for hover
+
+        # Adding hover effect for odd rows
+        dict(selector="tbody tr:nth-child(odd):hover",
+             props=[("background-color", "#BEBEBE")]),  # or any other color you prefer for hover
+
+        dict(selector="td",
              props=[("padding", "5px")]),
 
         dict(selector="thead th",
              props=[("background-color", "#FFFFFF"),
-                    {"border-bottom","2px solid #808080"},
-                    {"color","#808080"},
-                    {"text-align","right"},
-                    ("font-family","sans-serif"),
-                    {"font-size","medium"}]),
-            ]
+                    ("border-bottom", "2px solid #808080"),
+                    ("color", "#808080"),
+                    ("text-align", "right"),
+                    ("font-family", "sans-serif"),
+                    ("font-size", "medium")]),
+    ]
     return (df.style.set_table_styles(styles)).to_html()
-
 
 def get_rounded_latlon(val1,val2):
     lg1 = val1 % 5
