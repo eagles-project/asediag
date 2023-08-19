@@ -125,7 +125,11 @@ def get_html(form,title,extra=[],locations=[],fmt=None):
         {'selector':'th.col_heading',
         'props':[
             ('font-size','1.5em'),
-            ('padding-bottom','1em')]}
+            ('padding-bottom','1em')]},
+        {'selector':'tbody tr:hover',
+         'props':[
+             ('background-color','#D3D3D3')
+             ]}
     ])
 
     html = (
