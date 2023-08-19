@@ -26,6 +26,7 @@ def main():
     parser.add_argument("-loc", help="select location", default=None)
     parser.add_argument("-vlist", help="plot extra variables defined in configuration", default=None)
     parser.add_argument("-vunit", help="units of the extra variables defined in configuration", default=None)
+    parser.add_argument("-sp", help="splot", action='store_true',default=None)
     parser.add_argument("-tab", help="get budget tables", action='store_true', default=None)
     parser.add_argument("-prof", help="get zonal mean vertical profile plots", action='store_true', default=None)
     parser.add_argument("-eprof", help="get zonal mean vertical profile plots for any variables", default=None)
@@ -47,6 +48,7 @@ def main():
     vl = args.vlist
     vunit = args.vunit
     tb = args.tab
+    splot = args.sp
     profile = args.prof
     extraprof = args.eprof
     gunit = args.gunit
@@ -223,16 +225,16 @@ def main():
         for process in processes:
             process.join()
 
-    if tb != None:
+    if (tb != None) and (splot == None):
         aer_list = ['bc','so4','dst','mom','pom','ncl','soa','num','DMS','SO2','H2SO4']
         print('\nProducing all budget tables')
-        html = get_html("season.html","Aerosol budget")
+        html = get_html("season.html","Aerosol budget",locations=['Figure'],fmt='png')
         with open(path+'/tables/index.html','w') as file:
             file.write(html)
         for aer in aer_list[:]:
             processes=[]
             for ind in [0,1,2]:
-                p = mp.Process(target=get_all_tables,args=[ind,aer,path1,path2,case1,case2,path+'/tables',region,local,model,lnd])
+                p = mp.Process(target=get_all_tables,args=[ind,aer,path1,path2,case1,case2,path+'/tables',region,local,model,lnd,splot])
                 p.start()
                 processes.append(p)
             for process in processes:

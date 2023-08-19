@@ -87,6 +87,10 @@ plist = CCN3,CLDLIQ,CLDICE,dgnd_a01,dgnd_a02,dgnd_a03,dgnd_a04,dgnw_a01,dgnw_a02
         dgnw_a03,dgnw_a04
 ## Associated units for the variables in plist
 punit = 1/cm$^3$,kg/kg,kg/kg,m,m,m,m,m,m,m,m
+## ProfLoc activates with zonal and extraprofs options
+## Produces local vertical profiles
+## example: Loc1:lat1:lon1,Loc2:lat2:lon2 . . .
+ProfLoc = SGP:36.605:-97.485
 ## Run this config by: python submit_asediag_batches.py
 ```
 

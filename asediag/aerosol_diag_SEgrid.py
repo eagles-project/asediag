@@ -14,6 +14,11 @@ import fnmatch
 from pathlib import Path
 import pandas as pd
 from matplotlib.colors import ListedColormap
+import seaborn as sns
+pal = sns.color_palette("pastel",10)
+import matplotlib.gridspec as gridspec
+import warnings
+warnings.filterwarnings('ignore')
 
 ##########################################################################
 ##########################################################################    
@@ -271,7 +276,7 @@ def get_singleV_hplots(path,case,ts,var,fact=1,vertinit=None,pval='radiation',mo
     mean = (vdata*area).sum(area.dims)/(area).sum(area.dims)
     return vdata,mean,var,pval,lon,lat
 
-def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam',indl=None,land=False):
+def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam',indl=None,land=False,splot=None):
     try:
         data = xr.open_mfdataset(path+case+'.'+mod+'.'+ts+'.*_climo.nc')
         lon = data['lon'].values
@@ -471,13 +476,13 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam',indl=None,land=False
               'belowcloud, convec.','rain evap, strat.','rain evap, convec.',\
              'renaming (sfgaex2)','coagulation (sfcoag1)','calcsize (sfcsiz3)',\
              'calcsize (sfcsiz4)','dropmixnuc (mixnuc1)','cloudchem (AQH2SO4)',\
-             'cloudchem (AQSO4)','sfnnuc1','Aq. chem (gas-species)','gas chem/wet dep. (gas-species)',sname]
+             'cloudchem (AQSO4)','NPF (sfnnuc1)','Aq. chem (gas-species)','gas chem/wet dep. (gas-species)',sname]
     df.index=index_list
     listofSS = ['Dry deposition','Wet deposition','renaming (sfgaex2)',\
                  'coagulation (sfcoag1)','calcsize (sfcsiz3)',\
                  'calcsize (sfcsiz4)','dropmixnuc (mixnuc1)',\
                  'condensation-aging','surface emission','elevated emission',\
-                 'cloudchem (AQH2SO4)','cloudchem (AQSO4)','sfnnuc1',\
+                 'cloudchem (AQH2SO4)','cloudchem (AQSO4)','NPF (sfnnuc1)',\
                  'Aq. chem (gas-species)','gas chem/wet dep. (gas-species)']
     if aer in gvars:
         aer = 'total_'+aer
@@ -507,13 +512,73 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam',indl=None,land=False
                'belowcloud, convec.','rain evap, strat.','rain evap, convec.',\
                'Lifetime (days)','renaming (sfgaex2)','coagulation (sfcoag1)','calcsize (sfcsiz3)',\
                 'calcsize (sfcsiz4)','dropmixnuc (mixnuc1)','cloudchem (AQH2SO4)',\
-                'cloudchem (AQSO4)','condensation-aging','Aq. chem (gas-species)','gas chem/wet dep. (gas-species)'])
+                'cloudchem (AQSO4)','condensation-aging','NPF (sfnnuc1)','Aq. chem (gas-species)','gas chem/wet dep. (gas-species)'])
     return df
 
-def get_all_tables(ind,aer,path1,path2,case1,case2,path,reg,loc,mod,land):
+def get_budget_plot(data,path,var,ind,unit='(#/mg-air/yr)'):
+    data = data.reset_index()
+    data.columns = ['metric','cntl','test','diff','rel']
+    data = data.drop(index=[7,8,10,11,12,13,14,15,16,19,20,27]).reset_index(drop=True)
+    xx = ['Burden','Sfc Conc.','Total\nSource','Surface\nemission','Elevated\nemission','Total\nSink', \
+          'Dry\ndeposition', 'Wet\ndeposition','Renaming','Coagulation','Dropmix\nnuc',\
+          'Cloud\nchemistry\n(AQH2SO4)', 'Cloud\nchemistry\n(AQSO4)','Condensation','NPF',\
+          'Aquous\nchemistry\n(gas-species)']
+    data['metric'] = xx
+    ## Get sinks
+    data_sink = data[data['cntl']<0].sort_values(by='diff',ascending=False).reset_index(drop=True)
+    selrel = (data_sink['diff']/abs(data_sink['diff']).max())*100
+    data_sink = data_sink[abs(selrel)>=1].reset_index(drop=True)
+    data_sink['diff'] = np.sign(data_sink['cntl'])*data_sink['diff']
+    ## Get sources
+    data_source = data.drop(index=[0,1])[data['cntl']>0].sort_values(by='diff',ascending=True).reset_index(drop=True)
+    selrel = (data_source['diff']/abs(data_source['diff']).max())*100
+    data_source = data_source[abs(selrel)>=1].reset_index(drop=True)
+    data_source['diff'] = np.sign(data_source['cntl'])*data_source['diff']
+
+    ## Plot Figure
+    fig=plt.figure(figsize=[18,8])
+    gs = gridspec.GridSpec(1, 5,wspace=0.2)
+    ax1 = fig.add_subplot(gs[:, :4])
+    xx = data_source['metric'].tolist()+data_sink['metric'].tolist()
+    hh=0.2
+    ax1.bar(np.arange(0, len(data_source)), (data_source['diff']),color=pal[0],edgecolor='k',zorder=4,label='Sources')
+    ax1.bar(np.arange(len(data_source), len(data_source)+len(data_sink)), (data_sink['diff']),color=pal[1],edgecolor='k',zorder=4,label='Sinks')
+    ax1.set_xticks(np.arange(0, len(data_source)+len(data_sink)),xx)
+    ax1.grid(linestyle='--',color='#EBE7E0',zorder=4)
+    ax1.set_axisbelow(True)
+    plt.ylabel('$\Delta$('+var+')\n'+unit,fontsize=20)
+    plt.xlabel('')
+    plt.tick_params(labelsize=15)
+    plt.setp(ax1.spines.values(),lw=1.5)
+    ax1.tick_params(axis='x',which='both',bottom=False)
+    plt.axhline(0,c='k')
+    plt.legend(fontsize=15)
+
+    ## second axis
+    ax2 = fig.add_subplot(gs[:, 4:])
+    ax2.bar(0, data.iloc[0]['rel'],color=pal[2],width=0.5,edgecolor='k',zorder=4)
+    ax2.bar(1, data.iloc[1]['rel'],color=pal[2],width=0.5,edgecolor='k',zorder=4)
+    ax2.set_xticks([-0.5,0,1,1.5],['','Burden','Surface\nconc.',''])
+    ax2.grid(linestyle='--',color='#EBE7E0',zorder=4)
+    ax2.set_axisbelow(True)
+    plt.ylabel('Percent change (%)',fontsize=20)
+    ax2.yaxis.set_label_position("right")
+    ax2.yaxis.tick_right()
+    plt.xlabel('')
+    plt.tick_params(labelsize=15)
+    plt.setp(ax2.spines.values(),lw=1.5)
+    ax2.tick_params(axis='x',which='both',bottom=False)
+    plt.axhline(0,c='k')
+    ## Saving figure
     ss = ['ANN','DJF','JJA']
-    cdatadef=get_tables(path1,case1,ss[ind],aer,reg=reg,loc=loc,mod=mod,land=land)
-    cdatase=get_tables(path2,case2,ss[ind],aer,reg=reg,loc=loc,mod=mod,land=land)
+    plt.savefig(str(path)+'/'+var+'_Figure.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
+    plt.close()
+
+
+def get_all_tables(ind,aer,path1,path2,case1,case2,path,reg,loc,mod,land,splot):
+    ss = ['ANN','DJF','JJA']
+    cdatadef=get_tables(path1,case1,ss[ind],aer,reg=reg,loc=loc,mod=mod,land=land,splot=splot)
+    cdatase=get_tables(path2,case2,ss[ind],aer,reg=reg,loc=loc,mod=mod,land=land,splot=splot)
     if 'year' in cdatadef.columns:
         cdatadef = cdatadef.drop('year', axis=1)
     if 'year' in cdatase.columns:
@@ -522,10 +587,16 @@ def get_all_tables(ind,aer,path1,path2,case1,case2,path,reg,loc,mod,land):
     cdatarel = (cdatadiff/abs(cdatadef[cdatase.columns[1:]]))*100
     for col in cdatarel.columns:
         df = pd.DataFrame()
-        df['Control Case']=cdatadef[col]
-        df['Test Case']=cdatase[col]
-        df['difference']=cdatadiff[col]
-        df['rel diff (%)']=cdatarel[col]
+        df['<a target="_blank" href="{}">Control Case</a>'.format(col+'_'+case1+'_'+ss[ind]+'_latlon_splots.png')]=cdatadef[col]
+        df['<a target="_blank"  href="{}">Test Case</a>'.format(col+'_'+case2+'_'+ss[ind]+'_latlon_splots.png')]=cdatase[col]
+        df['<a target="_blank" href="{}">difference</a>'.format(col+'_diff_'+ss[ind]+'_latlon_splots.png')]=cdatadiff[col]
+        df['<a target="_blank" href="{}">rel diff (%)</a>'.format(col+'_rel_'+ss[ind]+'_latlon_splots.png')]=cdatarel[col]
+        if ind == 0:
+            if 'num' in aer:
+                gunit = '(#/mg-air/yr)'
+            else:
+                gunit = '(Tg/yr)'
+            get_budget_plot(df,path,col,ind,unit=gunit)
         pd.options.display.float_format = '{:g}'.format
         df = df.applymap(lambda x: rounding(x))
         df = df.astype(str)
@@ -533,7 +604,8 @@ def get_all_tables(ind,aer,path1,path2,case1,case2,path,reg,loc,mod,land):
         htable = dfhtml.replace('<thead>','\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>CNTL:</strong>   '+case1+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>TEST:</strong>   '+case2+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>VRBL:</strong>  '+col+'</caption>\n<thead>')
         with open(path+'/'+col+'_'+ss[ind]+'.html','w') as f:
             f.write(htable)
-            
+    return cdatarel.columns
+
 def gather_data(path,aer,case,mod,plev=None,sv=None,fact=1,vertinit=None,unit=None,reg=None,land=None):
     ss = ['ANN','DJF','JJA']
     dlist = []
@@ -896,7 +968,7 @@ def get_local_profiles(data1,data2,diff,rel,var,case1,case2,loc,path=None,gunit=
                  r'$\bf{Test\ Case:}$ '+case2+'\n'+r'$\bf{Plotting:}$ '+var,\
                  fontsize=20,horizontalalignment='left',x=0.125,y=0.98)
     ## Saving figure
-    plt.savefig(str(path)+'/'+var+'_'+loc+'_prof_lathgt.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
+    plt.savefig(str(path)+'/'+var+'_'+loc+'_lathgt.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
     
 def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,lat,scrip=None,reg='Global',path=None,grid=True):
     if reg!=None:

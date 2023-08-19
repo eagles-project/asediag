@@ -80,7 +80,7 @@ def group_duplicate_index(df):
     I = df.index[sidx].tolist()
     return [I[i:j] for i,j in zip(idx[::2],idx[1::2]+1)]
 
-def get_html(form,title,extra=[],locations=[]):
+def get_html(form,title,extra=[],locations=[],fmt=None):
     df = pd.DataFrame()
     listofvs = ['bc','bc_a1', 'bc_a3', 'bc_a4', 'bc_c1', 'bc_c3', 'bc_c4',\
                'so4','so4_a1', 'so4_a2', 'so4_a3', 'so4_c1', 'so4_c2', 'so4_c3',\
@@ -106,8 +106,11 @@ def get_html(form,title,extra=[],locations=[]):
     df['DJF']=df['Variable'].apply(lambda x: '<a href="{}_{}">DJF</a>'.format(x,form.replace('season','DJF')))
     df['JJA']=df['Variable'].apply(lambda x: '<a href="{}_{}">JJA</a>'.format(x,form.replace('season','JJA')))
     df['ANN']=df['Variable'].apply(lambda x: '<a href="{}_{}">ANN</a>'.format(x,form.replace('season','ANN')))
+    if fmt == None:
+        fmt = form.split('.')[1]
     for loc in locations:
-        df[loc]=df['Variable'].apply(lambda x: '<a href="{}_{}">Profile</a>'.format(x,form.replace('season',loc+'_prof')))
+        df[loc]=df['Variable'].apply(lambda x: '<a href="{}_{}">{}</a>'.format(x,form.split('.')[0].replace('season',loc)+'.'+fmt,loc))
+    
     df['Variable']=df['Variable'].map(spfull).fillna(df['Variable'])
     df.columns = ['Variable','','Seasons',' ']+locations
     styler = df.style
