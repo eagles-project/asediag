@@ -80,7 +80,7 @@ def group_duplicate_index(df):
     I = df.index[sidx].tolist()
     return [I[i:j] for i,j in zip(idx[::2],idx[1::2]+1)]
 
-def get_html(form,title,extra=[],locations=[],fmt=None):
+def get_html(form,title,extra=[],locations=[],fmt=None):     
     df = pd.DataFrame()
     listofvs = ['bc','bc_a1', 'bc_a3', 'bc_a4', 'bc_c1', 'bc_c3', 'bc_c4',\
                'so4','so4_a1', 'so4_a2', 'so4_a3', 'so4_c1', 'so4_c2', 'so4_c3',\
@@ -106,6 +106,7 @@ def get_html(form,title,extra=[],locations=[],fmt=None):
     df['DJF']=df['Variable'].apply(lambda x: '<a href="{}_{}">DJF</a>'.format(x,form.replace('season','DJF')))
     df['JJA']=df['Variable'].apply(lambda x: '<a href="{}_{}">JJA</a>'.format(x,form.replace('season','JJA')))
     df['ANN']=df['Variable'].apply(lambda x: '<a href="{}_{}">ANN</a>'.format(x,form.replace('season','ANN')))
+    
     if fmt == None:
         fmt = form.split('.')[1]
     for loc in locations:
@@ -113,29 +114,73 @@ def get_html(form,title,extra=[],locations=[],fmt=None):
     
     df['Variable']=df['Variable'].map(spfull).fillna(df['Variable'])
     df.columns = ['Variable','','Seasons',' ']+locations
-    styler = df.style
-    styler=styler.set_caption(title).set_table_styles([
-        {'selector':'caption',
-        'props':[
-            ('font-weight','bold'),
-            ('font-size','2.5em'),
-            ('padding-bottom','1em'),
-            ('text-align','center'),
-            ('border-width','0.5em')]},
-        {'selector':'th.col_heading',
-        'props':[
-            ('font-size','1.5em'),
-            ('padding-bottom','1em')]},
-        {'selector':'tbody tr:hover',
-         'props':[
-             ('background-color','#D3D3D3')
-             ]}
-    ])
-
+    
+    # Table styling
+    styles = [
+        {
+            'selector': 'caption',
+            'props': [
+                ('font-weight', 'bold'),
+                ('font-size', '2em'),
+                ('padding', '10px'),
+                ('text-align', 'center'),
+                ('color', '#333')
+            ]
+        },
+        {
+            'selector': 'th',
+            'props': [
+                ('font-size', '1.2em'),
+                ('text-align', 'center'),
+                ('background-color', '#eee'),
+                ('color', '#555'),
+                ('border-bottom', '2px solid #aaa')
+            ]
+        },
+        {
+            'selector': 'td',
+            'props': [
+                ('text-align', 'center'),
+                ('font-family', 'calibri'),
+                ('font-size', '12pt'),
+                ('padding', '10px'),
+                ('border-bottom', '1px solid #eee')
+            ]
+        },
+        {
+            'selector': 'a',
+            'props': [
+                ('color', '#337ab7'),
+                ('text-decoration', 'none')
+            ]
+        },
+        {
+            'selector': 'a:hover',
+            'props': [
+                ('color', '#23527c'),
+                ('text-decoration', 'underline')
+            ]
+        },
+        {
+            'selector': 'tbody tr:hover',
+            'props': [
+                ('background-color', '#f5f5f5')
+            ]
+        }
+    ]
+    
     html = (
-        styler.set_properties(**{'font-size':'12pt','font-family':'calibri','width':'12em','text-align':'center','padding-bottom':'1em'}).hide(axis="index").to_html()
+        df.style.set_caption(title)
+        .set_table_styles(styles)
+        .set_properties(**{
+            'font-family': 'calibri',
+            'width': '12em',
+            'padding': '10px'
+        })
+        .hide(axis="index")
+        .to_html()
     )
-    html=html.replace('</caption>','</caption>  <caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding-left: 2.5em"></caption>')
+
     return html
 
 def get_html_table(df):
