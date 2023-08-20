@@ -90,18 +90,22 @@ def get_html(form,title,extra=[],locations=[],fmt=None):
                'ncl','ncl_a1', 'ncl_a2', 'ncl_a3', 'ncl_c1', 'ncl_c2', 'ncl_c3',\
                'soa','soa_a1', 'soa_a2', 'soa_a3', 'soa_c1', 'soa_c2', 'soa_c3',\
                'num','num_a1', 'num_a2', 'num_a3', 'num_a4', 'num_c1', 'num_c2', 'num_c3', 'num_c4',\
-               'SO2','DMS','H2SO4']+extra
-    spfull = {'bc':'<a id="Black Carbon"><font color="red"><strong>Black Carbon</string></font>',\
-              'so4':'<a id="Sulfate"><font color="red"><strong>Sulfate</string></font>',\
-              'dst':'<font color="red"><strong>Dust</string></font>',\
-              'mom':'<font color="red"><strong>Marine organic matter</string></font>',\
-              'pom':'<font color="red"><strong>Primary organic matter</string></font>',\
-              'ncl':'<font color="red"><strong>Sea salt</string></font>',\
-              'soa':'<font color="red"><strong>Secondary organic aerosol</string></font>',\
-              'num':'<a id="Aerosol number"><font color="red"><strong>Aerosol number</string></font>',\
-              'SO2':'<font color="red"><strong>SO2</string></font>',\
-              'DMS':'<font color="red"><strong>DMS</string></font>',\
-              'H2SO4':'<font color="red"><strong>H2SO4</string></font>'}
+               'SO2','DMS','H2SO4']+extra+['']
+
+    spfull = {
+    'bc': '<div style="position:relative;"><a id="BlackCarbon" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Black Carbon</strong></span></div>',
+    'so4': '<div style="position:relative;"><a id="Sulfate" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Sulfate</strong></span></div>',
+    'dst': '<div style="position:relative;"><a id="Dust" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Dust</strong></span></div>',
+    'mom': '<div style="position:relative;"><a id="mom" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Marine organic matter</strong></span></div>',
+    'pom': '<div style="position:relative;"><a id="pom" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Primary organic matter</strong></span></div>',
+    'ncl': '<div style="position:relative;"><a id="Seasalt" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Sea salt</strong></span></div>',
+    'soa': '<div style="position:relative;"><a id="soa" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Secondary organic aerosol</strong></span></div>',
+    'num': '<div style="position:relative;"><a id="num" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Aerosol number</strong></span></div>',
+    'SO2': '<div style="position:relative;"><a id="so2" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>SO2</strong></span></div>',
+    'DMS': '<div style="position:relative;"><a id="dms" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>DMS</strong></span></div>',
+    'H2SO4': '<div style="position:relative;"><a id="h2so4" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>H2SO4</strong></span></div>',
+    }
+
     df['Variable']=listofvs
     df['DJF']=df['Variable'].apply(lambda x: '<a href="{}_{}">DJF</a>'.format(x,form.replace('season','DJF')))
     df['JJA']=df['Variable'].apply(lambda x: '<a href="{}_{}">JJA</a>'.format(x,form.replace('season','JJA')))
@@ -170,8 +174,7 @@ def get_html(form,title,extra=[],locations=[],fmt=None):
     ]
     
     html = (
-        df.style.set_caption(title)
-        .set_table_styles(styles)
+        df.style.set_table_styles(styles)
         .set_properties(**{
             'font-family': 'calibri',
             'width': '12em',
@@ -181,7 +184,7 @@ def get_html(form,title,extra=[],locations=[],fmt=None):
         .to_html()
     )
 
-    return html
+    return html, title
 
 def get_html_table(df):
 
@@ -320,3 +323,143 @@ def get_vertint(vdata,ha,p0,hb,ps,grav,fact):
     vdata = vdata*fact
     vdata = vdata.sum('lev')
     return vdata
+
+def html_template(title,html):
+    html_code = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>PNNL Aerosol Diagnostics</title>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+            }}
+            
+            header {{
+                background-color: #333;
+                color: white;
+                text-align: center;
+                padding: 0;
+                position: fixed;
+                top: 0;
+                width: 100%;
+                z-index: 1000;
+                box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.2);
+            }}
+    
+            #container {{
+                display: flex;
+            }}
+    
+            #side-nav {{
+                position: fixed;
+                top: 80px;
+                height: calc(100% - 80px);
+                overflow-y: auto;
+                width: 20%;
+                border-right: 1px solid #ccc;
+                padding: 1rem;
+                z-index: 500;
+                background-color: #fff;
+                box-shadow: 3px 0px 10px rgba(0, 0, 0, 0.1);
+                padding-top: 5px;
+            }}
+    
+            #side-nav ul {{
+                list-style-type: none;
+                padding: 0;
+            }}
+    
+            #side-nav li {{
+                margin-bottom: 1rem;
+            }}
+    
+            #side-nav h2 {{
+                color: #1976D2;
+            }}
+        
+            #side-nav a {{
+                text-decoration: none;
+                color: #555;
+                font-weight: bold;
+                padding: 0.2rem;
+                display: block;
+                border-radius: 5px;
+                transition: background-color 0.3s;
+            }}
+    
+            #side-nav a:hover {{
+                background-color: #eee;
+            }}
+    
+            #content {{
+                margin-top: 80px;
+                margin-left: 24%;
+                width: 80%;
+                padding: 1rem;
+            }}
+        
+            footer {{
+                text-align: center;
+                padding: 0.5rem 0;
+                background-color: #333;
+                color: #fff;
+                font-size: 0.8em;
+                position: fixed;
+                bottom: 0;
+                width: 100%;
+                z-index: 999;
+                box-shadow: 0px -3px 10px rgba(0, 0, 0, 0.2);
+            }}
+    
+        
+        </style>
+    </head>
+    
+    <body>
+    
+        <header>
+            <h1>PNNL Aerosol Diagnostics</h1>
+        </header>
+    
+        <div id="container">
+            <!-- Side Navigation -->
+            <aside id="side-nav">
+                <h2>{title}</h2>
+                <ul>
+                    <li><a href="#BlackCarbon">Black Carbon</a></li>
+                    <li><a href="#Sulfate">Sulfate</a></li>
+                    <li><a href="#Dust">Dust</a></li>
+                    <li><a href="#mom">Marine organic matter</a></li>
+                    <li><a href="#pom">Primary organic matter</a></li>
+                    <li><a href="#Seasalt">Sea salt</a></li>
+                    <li><a href="#soa">Secondary organic aerosol</a></li>
+                    <li><a href="#num">Aerosol number</a></li>
+                    <li><a href="#so2">SO2</a></li>
+                    <li><a href="#dms">DMS</a></li>
+                    <li><a href="#h2so4">H2SO4</a></li>
+                </ul>
+            </aside>
+    
+            <!-- Main Content -->
+            <section id="content">
+                {html}
+            </section>
+        </div>
+    
+        <footer>
+            <p> 2023 Pacific Northwest National Laboratory. All rights reserved.</p>
+        </footer>
+    
+    </body>
+    
+    </html>
+    """
+    
+    return html_code
+

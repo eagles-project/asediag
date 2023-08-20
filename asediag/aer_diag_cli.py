@@ -8,7 +8,7 @@ import shutil
 
 from asediag.aerosol_diag_SEgrid import get_forcing_df, gather_ProfData, get_vert_profiles
 from asediag.aerosol_diag_SEgrid import gather_data, get_map, get_all_tables, get_local_profiles
-from asediag.asediag_utils import get_html, get_plocal
+from asediag.asediag_utils import get_html, get_plocal, html_template
 
 def main():
 
@@ -156,9 +156,10 @@ def main():
     if profile != None:
         sites,lats,lons = get_plocal(local)
         aer_list = ['bc','so4','dst','mom','pom','ncl','soa','num','DMS','SO2','H2SO4']
-        html = get_html("season_lathgt.png","Vertical contour plots of zonal means",locations=sites)
+        html,title = get_html("season_lathgt.png","Vertical contour plots of zonal means",locations=sites)
+        html_code = html_template(title,html)
         with open(path+'/set01/index.html','w') as file:
-            file.write(html)
+            file.write(html_code)
         for aer in aer_list[:]:
             print('getting data\n')
             print(path1,path2)
@@ -193,9 +194,10 @@ def main():
         eprof_list = extraprof.split(',')
         gunits = gunit.split(',')
         assert len(eprof_list) == len(gunits), "List of variables and units should have the same length!"
-        html = get_html("season_lathgt.png","Vertical contour plots of zonal means",extra=eprof_list,locations=sites)
+        html,title = get_html("season_lathgt.png","Vertical contour plots of zonal means",extra=eprof_list,locations=sites)
+        html_code = html_template(title,html)
         with open(path+'/set01/index.html','w') as file:
-            file.write(html)
+            file.write(html_code)
         print('getting data\n')
         print(path1,path2)
         print('\nProducing profiles can take some time in SE-grid\nbinning data . . .\n')
@@ -228,9 +230,10 @@ def main():
     if (tb != None) and (splot == None):
         aer_list = ['bc','so4','dst','mom','pom','ncl','soa','num','DMS','SO2','H2SO4']
         print('\nProducing all budget tables')
-        html = get_html("season.html","Aerosol budget",locations=['Figure'],fmt='png')
+        html, title = get_html("season.html","Aerosol budget",locations=['Figure'],fmt='png')
+        html_code = html_template(title,html)
         with open(path+'/tables/index.html','w') as file:
-            file.write(html)
+            file.write(html_code)
         for aer in aer_list[:]:
             processes=[]
             for ind in [0,1,2]:

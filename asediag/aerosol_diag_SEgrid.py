@@ -515,7 +515,7 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam',indl=None,land=False
                 'cloudchem (AQSO4)','condensation-aging','NPF (sfnnuc1)','Aq. chem (gas-species)','gas chem/wet dep. (gas-species)'])
     return df
 
-def get_budget_plot(data,path,var,ind,unit='(#/mg-air/yr)'):
+def get_budget_plot(data,path,var,ind,case1,case2,unit='(#/mg-air/yr)'):
     data = data.reset_index()
     data.columns = ['metric','cntl','test','diff','rel']
     data = data.drop(index=[7,8,10,11,12,13,14,15,16,19,20,27]).reset_index(drop=True)
@@ -536,7 +536,7 @@ def get_budget_plot(data,path,var,ind,unit='(#/mg-air/yr)'):
     data_source['diff'] = np.sign(data_source['cntl'])*data_source['diff']
 
     ## Plot Figure
-    fig=plt.figure(figsize=[18,8])
+    fig=plt.figure(figsize=[18,10])
     gs = gridspec.GridSpec(1, 5,wspace=0.2)
     ax1 = fig.add_subplot(gs[:, :4])
     xx = data_source['metric'].tolist()+data_sink['metric'].tolist()
@@ -569,6 +569,10 @@ def get_budget_plot(data,path,var,ind,unit='(#/mg-air/yr)'):
     plt.setp(ax2.spines.values(),lw=1.5)
     ax2.tick_params(axis='x',which='both',bottom=False)
     plt.axhline(0,c='k')
+    
+    fig.suptitle(r'$\bf{Control\ Case:}$ '+case1+'\n'+\
+                 r'$\bf{Test\ Case:}$ '+case2+'\n'+r'$\bf{Plotting:}$ '+var,\
+                 fontsize=20,horizontalalignment='left',x=0.125,y=0.98)
     ## Saving figure
     ss = ['ANN','DJF','JJA']
     plt.savefig(str(path)+'/'+var+'_Figure.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
@@ -596,7 +600,7 @@ def get_all_tables(ind,aer,path1,path2,case1,case2,path,reg,loc,mod,land,splot):
                 gunit = '(#/mg-air/yr)'
             else:
                 gunit = '(Tg/yr)'
-            get_budget_plot(df,path,col,ind,unit=gunit)
+            get_budget_plot(df,path,col,ind,case1,case2,unit=gunit)
         pd.options.display.float_format = '{:g}'.format
         df = df.applymap(lambda x: rounding(x))
         df = df.astype(str)
