@@ -86,9 +86,6 @@ def main():
         filedata = file.read()
         filedata = filedata.replace('Test_case',case2)
         filedata = filedata.replace('Control_case',case1)
-        if (region!=None) and (region!='Global') and (hp==None):
-            Path(tmp+"/set02"+region).mkdir(exist_ok=True)
-            filedata = filedata.replace('<p><span class="red">4.</span> <a href="set02RF/index.html">Radiative Forcing analysis</a></p>','<p><span class="red">4.</span> <a href="set02RF/index.html">Radiative Forcing analysis</a></p>\n<p><span class="red">5.</span> <a href="set02'+region+'/index.html">'+region+' Horizontal contour plots</a></p>')
     with open(path+'/aerosol.html','w') as file:
         file.write(filedata)
         
