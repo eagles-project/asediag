@@ -399,11 +399,26 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam',indl=None,land=False
                     vdata = vdata*factaa
             else:
                 if (aer == 'so4') or (aer in gvars):
-                    vdata = vdata*factcc
+                    if ('ncol' in data.dims) and (len(vdata.dims) > 1):
+                        vdata = get_vertint(vdata,ha,p0,hb,ps,grav,factcc)
+                    elif len(vdata.dims) > 2:
+                        vdata = get_vertint(vdata,ha,p0,hb,ps,grav,factcc)
+                    else:
+                        vdata = vdata*factcc
                 elif aer == 'num':
-                    vdata = vdata*factbb/sum_airmass
+                    if ('ncol' in data.dims) and (len(vdata.dims) > 1):
+                        vdata = get_vertint(vdata,ha,p0,hb,ps,grav,factbb)/sum_airmass
+                    elif len(vdata.dims) > 2:
+                        vdata = get_vertint(vdata,ha,p0,hb,ps,grav,factbb)/sum_airmass
+                    else:
+                        vdata = vdata*factbb/sum_airmass
                 else:
-                    vdata = vdata*factbb
+                    if ('ncol' in data.dims) and (len(vdata.dims) > 1):
+                        vdata = get_vertint(vdata,ha,p0,hb,ps,grav,factbb)
+                    elif len(vdata.dims) > 2:
+                        vdata = get_vertint(vdata,ha,p0,hb,ps,grav,factbb)
+                    else:
+                        vdata = vdata*factbb
         ## getting total
         prob_list=[]
         for item in vars1[:-1]:
@@ -894,20 +909,25 @@ def get_vert_profiles(data1,data2,diff,rel,var,ind,case1,case2,path=None,gunit=N
     dd1=data1.isel(season=ind)
     dd2=data2.isel(season=ind)
     rr=gen_colbar_range(v1=dd1,v2=dd2).vmap()
-    ee=diff.isel(season=ind)   
+    aagg=(np.max(dd1).values+np.max(dd2).values)/2
+    print('var',var)
+    print(aagg)
+    ee=diff.isel(season=ind)
     rr_diff=gen_colbar_range(diff=ee,v1=dd1).vdiff()
     ff=rel.isel(season=ind)
     rr_rel=[-100.,-50.,-20.,-10.,-5.,-2.,2.,5.,10.,20.,50.,100.]
-    
+
     ss = ['ANN','DJF','JJA']
     titles = ['Control Case','Test Case','Test Case'+' $-$ '+'Control Case','Relative diff (%)']
     colBars = [rr,rr,rr_diff,rr_rel]
     colMaps = [amwg256_map,amwg256_map,BlueWhiteOrangeRed_map,BlueWhiteOrangeRed_map]
+
     if gunit == None:
         if 'num' in var:
             gunit = '[# cm$^{-3}$]'
         else:
             gunit = '[ug m$^{-3}$]'
+
     units = [gunit,gunit,gunit,'[%]']
     varbls = [dd1,dd2,ee,ff]
 
@@ -915,23 +935,32 @@ def get_vert_profiles(data1,data2,diff,rel,var,ind,case1,case2,path=None,gunit=N
 
     for i,t,colr,u,cmap,vals in zip([1,2,3,4],titles,colBars,units,colMaps,varbls):
         if i<3:
-            cbs=5
-            cbe=-20
-            cbi=2
+            if aagg == 0:
+                cbs=-20
+                cbe=5
+                cbi=-2
+            else:
+                cbs=5
+                cbe=-20
+                cbi=2
         else:
-            cbs=0
-            cbe=-1
-            cbi=5
+            if aagg == 0:
+                cbs=-1
+                cbe=0
+                cbi=-5
+            else:
+                cbs=0
+                cbe=-1
+                cbi=5
         panel=plt.subplot(220+i)
         getVmap(vals,colr,panel,u,cm=cmap,cbs=cbs,cbe=cbe,cbi=cbi)
         panel.text(0.005,1.03,t,size=15,transform=panel.transAxes)
- 
+
     fig.suptitle(r'$\bf{Control\ Case:}$ '+case1+'\n'+\
                  r'$\bf{Test\ Case:}$ '+case2+'\n'+r'$\bf{Plotting:}$ '+var,\
                  fontsize=20,horizontalalignment='left',x=0.125,y=0.98)
     ## Saving figure
     plt.savefig(str(path)+'/'+var+'_'+ss[ind]+'_lathgt.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
-
 
 def get_local_profiles(data1,data2,diff,rel,var,case1,case2,loc,path=None,gunit=None):
     if gunit == None:
