@@ -218,7 +218,7 @@ def main():
         gunits = gunit.split(',')
         assert len(eprof_list) == len(gunits), "List of variables and units should have the same length!"
         spfull_vars = ['CCN3','dgnd_a01','dgnw_a01'] # Hard-coded for utility
-        html,title,tmp = get_html("season_lathgt.png","Vertical contour plots of zonal means",locations=sites,listofvs=eprof_list,spfull_vars=spfull_vars,extra=[''])
+        html,title,tmp = get_html("season_lathgt.png","Vertical contour plots of zonal means",locations=sites,listofvs=eprof_list,spfull_vars=spfull_vars)
         html_code = html_template(title,html,tmp)
         with open(path+'/set01/index_other.html','w') as file:
             file.write(html_code)
