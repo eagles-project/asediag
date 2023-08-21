@@ -80,32 +80,49 @@ def group_duplicate_index(df):
     I = df.index[sidx].tolist()
     return [I[i:j] for i,j in zip(idx[::2],idx[1::2]+1)]
 
-def get_html(form,title,extra=[],locations=[],fmt=None):     
+def get_html(form,title,extra=[],locations=[],fmt=None,listofvs=None,spfull_vars=None):     
     df = pd.DataFrame()
-    listofvs = ['bc','bc_a1', 'bc_a3', 'bc_a4', 'bc_c1', 'bc_c3', 'bc_c4',\
-               'so4','so4_a1', 'so4_a2', 'so4_a3', 'so4_c1', 'so4_c2', 'so4_c3',\
-               'dst','dst_a1', 'dst_a3', 'dst_c1', 'dst_c3',\
-               'mom','mom_a1', 'mom_a2', 'mom_a3', 'mom_a4', 'mom_c1', 'mom_c2', 'mom_c3', 'mom_c4',\
-               'pom','pom_a1', 'pom_a3', 'pom_a4', 'pom_c1', 'pom_c3', 'pom_c4',\
-               'ncl','ncl_a1', 'ncl_a2', 'ncl_a3', 'ncl_c1', 'ncl_c2', 'ncl_c3',\
-               'soa','soa_a1', 'soa_a2', 'soa_a3', 'soa_c1', 'soa_c2', 'soa_c3',\
-               'num','num_a1', 'num_a2', 'num_a3', 'num_a4', 'num_c1', 'num_c2', 'num_c3', 'num_c4',\
-               'SO2','DMS','H2SO4']+extra+['']
+    if listofvs == None:
+        listofvs = ['bc','bc_a1', 'bc_a3', 'bc_a4', 'bc_c1', 'bc_c3', 'bc_c4',\
+                   'so4','so4_a1', 'so4_a2', 'so4_a3', 'so4_c1', 'so4_c2', 'so4_c3',\
+                   'dst','dst_a1', 'dst_a3', 'dst_c1', 'dst_c3',\
+                   'mom','mom_a1', 'mom_a2', 'mom_a3', 'mom_a4', 'mom_c1', 'mom_c2', 'mom_c3', 'mom_c4',\
+                   'pom','pom_a1', 'pom_a3', 'pom_a4', 'pom_c1', 'pom_c3', 'pom_c4',\
+                   'ncl','ncl_a1', 'ncl_a2', 'ncl_a3', 'ncl_c1', 'ncl_c2', 'ncl_c3',\
+                   'soa','soa_a1', 'soa_a2', 'soa_a3', 'soa_c1', 'soa_c2', 'soa_c3',\
+                   'num','num_a1', 'num_a2', 'num_a3', 'num_a4', 'num_c1', 'num_c2', 'num_c3', 'num_c4',\
+                   'SO2','DMS','H2SO4']+['']+extra
+    else:
+        listofvs = listofvs + extra
 
-    spfull = {
-    'bc': '<div style="position:relative;"><a id="BlackCarbon" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Black Carbon</strong></span></div>',
-    'so4': '<div style="position:relative;"><a id="Sulfate" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Sulfate</strong></span></div>',
-    'dst': '<div style="position:relative;"><a id="Dust" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Dust</strong></span></div>',
-    'mom': '<div style="position:relative;"><a id="mom" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Marine organic matter</strong></span></div>',
-    'pom': '<div style="position:relative;"><a id="pom" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Primary organic matter</strong></span></div>',
-    'ncl': '<div style="position:relative;"><a id="Seasalt" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Sea salt</strong></span></div>',
-    'soa': '<div style="position:relative;"><a id="soa" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Secondary organic aerosol</strong></span></div>',
-    'num': '<div style="position:relative;"><a id="num" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Aerosol number</strong></span></div>',
-    'SO2': '<div style="position:relative;"><a id="so2" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>SO2</strong></span></div>',
-    'DMS': '<div style="position:relative;"><a id="dms" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>DMS</strong></span></div>',
-    'H2SO4': '<div style="position:relative;"><a id="h2so4" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>H2SO4</strong></span></div>',
-    }
+    if spfull_vars == None:
+        spfull = {
+        'bc': '<div style="position:relative;"><a id="BlackCarbon" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Black Carbon</strong></span></div>',
+        'so4': '<div style="position:relative;"><a id="Sulfate" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Sulfate</strong></span></div>',
+        'dst': '<div style="position:relative;"><a id="Dust" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Dust</strong></span></div>',
+        'mom': '<div style="position:relative;"><a id="mom" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Marine organic matter</strong></span></div>',
+        'pom': '<div style="position:relative;"><a id="pom" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Primary organic matter</strong></span></div>',
+        'ncl': '<div style="position:relative;"><a id="Seasalt" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Sea salt</strong></span></div>',
+        'soa': '<div style="position:relative;"><a id="soa" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Secondary organic aerosol</strong></span></div>',
+        'num': '<div style="position:relative;"><a id="num" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>Aerosol number</strong></span></div>',
+        'SO2': '<div style="position:relative;"><a id="so2" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>SO2</strong></span></div>',
+        'DMS': '<div style="position:relative;"><a id="dms" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>DMS</strong></span></div>',
+        'H2SO4': '<div style="position:relative;"><a id="h2so4" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>H2SO4</strong></span></div>',
+        }
+    else:
+        spfull = {}
+        for var in spfull_vars:
+            new_var = {var: str('<div style="position:relative;"><a id='+var.replace(' ','')+' style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>'+var+'</strong></span></div>')}
+            spfull.update(new_var)
 
+            
+    
+    tmp = ' '*16
+    for key in spfull.keys():
+        name = spfull[key].split('<strong>')[1].split('</strong>')[0]
+        idval = spfull[key].split('id=')[1].split(' ')[0].strip('"')
+        tmp = tmp + '<li><a href="#'+idval+'">'+name+'</a></li>\n'+' '*16
+        
     df['Variable']=listofvs
     df['DJF']=df['Variable'].apply(lambda x: '<a href="{}_{}">DJF</a>'.format(x,form.replace('season','DJF')))
     df['JJA']=df['Variable'].apply(lambda x: '<a href="{}_{}">JJA</a>'.format(x,form.replace('season','JJA')))
@@ -172,6 +189,7 @@ def get_html(form,title,extra=[],locations=[],fmt=None):
             ]
         }
     ]
+
     
     html = (
         df.style.set_table_styles(styles)
@@ -184,7 +202,8 @@ def get_html(form,title,extra=[],locations=[],fmt=None):
         .to_html()
     )
 
-    return html, title
+    return html,title,tmp
+
 
 def get_html_table(df):
 
@@ -327,7 +346,7 @@ def get_vertint(vdata,ha,p0,hb,ps,grav,fact):
     vdata = vdata.sum('lev')
     return vdata
 
-def html_template(title,html):
+def html_template(title,html,tmp):
     html_code = f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -435,17 +454,8 @@ def html_template(title,html):
             <aside id="side-nav">
                 <h2>{title}</h2>
                 <ul>
-                    <li><a href="#BlackCarbon">Black Carbon</a></li>
-                    <li><a href="#Sulfate">Sulfate</a></li>
-                    <li><a href="#Dust">Dust</a></li>
-                    <li><a href="#mom">Marine organic matter</a></li>
-                    <li><a href="#pom">Primary organic matter</a></li>
-                    <li><a href="#Seasalt">Sea salt</a></li>
-                    <li><a href="#soa">Secondary organic aerosol</a></li>
-                    <li><a href="#num">Aerosol number</a></li>
-                    <li><a href="#so2">SO2</a></li>
-                    <li><a href="#dms">DMS</a></li>
-                    <li><a href="#h2so4">H2SO4</a></li>
+                    {tmp}
+                    <li style="margin-top: 5rem;"><a href="../aerosol.html" style="color: #1976D2;font-size: 20px;"><< Main Menu</a></li>
                 </ul>
             </aside>
     

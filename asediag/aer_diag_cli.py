@@ -84,8 +84,8 @@ def main():
     # !!This can be modified...Looks weird!!
     with open(tmp+'/aerosol.html','r') as file:
         filedata = file.read()
-        filedata = filedata.replace('F20TR_v2_ndg_ERA5_SEdata_NA_RRM',case2)
-        filedata = filedata.replace('F20TR_v2_ndg_ERA5_Defdata_NA_RRM',case1)
+        filedata = filedata.replace('Test_case',case2)
+        filedata = filedata.replace('Control_case',case1)
         if (region!=None) and (region!='Global') and (hp==None):
             Path(tmp+"/set02"+region).mkdir(exist_ok=True)
             filedata = filedata.replace('<p><span class="red">4.</span> <a href="set02RF/index.html">Radiative Forcing analysis</a></p>','<p><span class="red">4.</span> <a href="set02RF/index.html">Radiative Forcing analysis</a></p>\n<p><span class="red">5.</span> <a href="set02'+region+'/index.html">'+region+' Horizontal contour plots</a></p>')
@@ -96,7 +96,25 @@ def main():
     start = time.perf_counter()
     # if __name__ == '__main__':
     if hp == None:
+        pv_name = {'1013':'Surface concentration',
+                   '850':'Concentration at 850 hPa',
+                   '500':'Concentration at 500 hPa',
+                   '250':'Concentration at 250 hPa'
+                   }
+        
         aer_list = ['bc','so4','dst','mom','pom','ncl','soa','num','DMS','SO2','H2SO4']
+        
+        if pv == None:
+            html,title,tmp = get_html("season_latlon_bdn.png","Column-integrated burden")
+            html_code = html_template(title,html,tmp)
+            with open(path+'/set02/index_burden.html','w') as file:
+                file.write(html_code)
+        else:
+            html,title,tmp = get_html("season_latlon_"+str(pv)+".png",pv_name[str(pv)])
+            html_code = html_template(title,html,tmp)
+            with open(path+'/set02/index_'+str(pv)+'.html','w') as file:
+                file.write(html_code)
+
         for aer in aer_list[:]:
             print('getting data\n')
             print(path1,path2)
@@ -131,6 +149,11 @@ def main():
         vlist = vl.split(',')
         vunits = vunit.split(',')
         assert len(vlist) == len(vunits), "List of variables and units should have the same length!"
+        spfull_vars = ['AODVIS','AODBC','AODMODE1','BURDENBC','BURDEN1'] # Hard-coded for utility
+        html,title,tmp = get_html("season_latlon_radiation.png","Other variables",listofvs=vlist,spfull_vars=spfull_vars,extra=[''])
+        html_code = html_template(title,html,tmp)
+        with open(path+'/set02/index_other.html','w') as file:
+            file.write(html_code)
         print('getting data\n')
         print(path1,path2)
         print('\nPlotting all the extra variables\n')
@@ -156,9 +179,9 @@ def main():
     if profile != None:
         sites,lats,lons = get_plocal(local)
         aer_list = ['bc','so4','dst','mom','pom','ncl','soa','num','DMS','SO2','H2SO4']
-        html,title = get_html("season_lathgt.png","Vertical contour plots of zonal means",locations=sites)
-        html_code = html_template(title,html)
-        with open(path+'/set01/index.html','w') as file:
+        html,title,tmp = get_html("season_lathgt.png","Vertical contour plots of zonal means",locations=sites)
+        html_code = html_template(title,html,tmp)
+        with open(path+'/set01/index_orig.html','w') as file:
             file.write(html_code)
         for aer in aer_list[:]:
             print('getting data\n')
@@ -194,9 +217,10 @@ def main():
         eprof_list = extraprof.split(',')
         gunits = gunit.split(',')
         assert len(eprof_list) == len(gunits), "List of variables and units should have the same length!"
-        html,title = get_html("season_lathgt.png","Vertical contour plots of zonal means",extra=eprof_list,locations=sites)
-        html_code = html_template(title,html)
-        with open(path+'/set01/index.html','w') as file:
+        spfull_vars = ['CCN3','dgnd_a01','dgnw_a01'] # Hard-coded for utility
+        html,title,tmp = get_html("season_lathgt.png","Vertical contour plots of zonal means",locations=sites,listofvs=eprof_list,spfull_vars=spfull_vars,extra=[''])
+        html_code = html_template(title,html,tmp)
+        with open(path+'/set01/index_other.html','w') as file:
             file.write(html_code)
         print('getting data\n')
         print(path1,path2)
@@ -230,8 +254,8 @@ def main():
     if (tb != None) and (splot == None):
         aer_list = ['bc','so4','dst','mom','pom','ncl','soa','num','DMS','SO2','H2SO4']
         print('\nProducing all budget tables')
-        html, title = get_html("season.html","Aerosol budget",locations=['Figure'],fmt='png')
-        html_code = html_template(title,html)
+        html, title,tmp = get_html("season.html","Aerosol budget",locations=['Figure'],fmt='png')
+        html_code = html_template(title,html,tmp)
         with open(path+'/tables/index.html','w') as file:
             file.write(html_code)
         for aer in aer_list[:]:
@@ -244,6 +268,10 @@ def main():
                 process.join()
 
     if rf != None:
+        html,title,tmp = get_html("season_latlon.html","Radiative forcings",listofvs=['Forcing'],spfull_vars=['Forcing'],locations=['TOA','SFC'],fmt='png')
+        html_code = html_template(title,html,tmp)
+        with open(path+'/set02RF/index.html','w') as file:
+            file.write(html_code)
         print('\nProducing all forcing analysis')
         processes=[]
         for ind in ['ANN','JJA','DJF']:

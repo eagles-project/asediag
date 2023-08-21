@@ -334,7 +334,7 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam',indl=None,land=False
     cvariables = [aer+'_c?',aer+'_c?'+'DDF',aer+'_c?'+'SFWET','SF'+aer+'_c?',aer+'_c?'+'_CLXF',\
      aer+'_c?'+'_sfgaex1',aer+'_c?'+'GVF',aer+'_c?'+'TBF',aer+'_c?'+'SFSIS',\
      aer+'_c?'+'SFSIC',aer+'_c?'+'SFSBS',aer+'_c?'+'SFSBC',aer+'_c?'+'SFSES',\
-     aer+'_c?'+'SFSEC',aer+'_c?'+'_sfgaex2',aer+'_c?'+'_sfcoag1',aer+'_c?'+'_sfcsiz3',\
+     aer+'_c?'+'SFSEC','_sfgaex2',aer+'_c?'+'_sfcoag1',aer+'_c?'+'_sfcsiz3',\
      aer+'_c?'+'_sfcsiz4',aer+'_c?'+'_mixnuc1',aer+'_c?'+'AQH2SO4',\
      aer+'_c?'+'AQSO4',aer+'_c?'+'_sfnnuc1','AQ_'+aer+'_c?','GS_'+aer+'_c?',aer+'_c?']
     
@@ -718,7 +718,7 @@ def forcing_plots(plot_vars,path,area,season,plane,lon1,lon2,lat1,lat2,scrip):
         ax.text(0.89,1.03, '{:0.3f}'.format(m.values),size=12,transform=ax.transAxes)
         ax.text(0.05,0.95,l,size=12,transform=ax.transAxes,va='top',bbox={'facecolor':'white','pad':1,'edgecolor':'none'})
         i+=1
-    plt.savefig(str(path)+'/'+plane+'_forcing_'+season+'_latlon.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
+    plt.savefig(str(path)+'/Forcing_'+plane+'_latlon.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
     
     
 def get_forcings(datadef,datase,lon,lat,area,path,season,scrip,reg=None,loc=None):
@@ -764,7 +764,8 @@ def get_forcings(datadef,datase,lon,lat,area,path,season,scrip,reg=None,loc=None
             v.name = n.strip()
         saving_data = xr.merge(plot_vars)
         #saving_data.load().to_netcdf(path+'/TOA_forcing_vars_global.nc')
-        forcing_plots(plot_vars,path,area,season,'TOA',lon1,lon2,lat1,lat2,scrip)
+        if season == 'ANN':
+            forcing_plots(plot_vars,path,area,season,'TOA',lon1,lon2,lat1,lat2,scrip)
 
     all_vars=[TTAEF,SWAEF,LWAEF,SWCAEF,LWCAEF,SWIND,LWIND,TTIND,SWDIR,LWDIR,TTDIR,\
              SWCDIR,LWCDIR,TTCDIR,SWALB,LWALB,TTALB]
@@ -809,7 +810,8 @@ def get_forcings(datadef,datase,lon,lat,area,path,season,scrip,reg=None,loc=None
             v.name = n.strip()
         saving_data = xr.merge(plot_vars)
         #saving_data.load().to_netcdf(path+'/SFC_forcing_vars_global.nc')
-        forcing_plots(plot_vars,path,area,season,'SFC',lon1,lon2,lat1,lat2,scrip)
+        if season == 'ANN':
+            forcing_plots(plot_vars,path,area,season,'SFC',lon1,lon2,lat1,lat2,scrip)
     
     all_vars=[TTAEF,SWAEF,LWAEF,SWCAEF,LWCAEF,SWIND,LWIND,TTIND,SWDIR,LWDIR,TTDIR,\
              SWCDIR,LWCDIR,TTCDIR,SWALB,LWALB,TTALB]
@@ -873,7 +875,7 @@ def get_forcing_df(path1,path2,case1,case2,path,season='ANN',mod='eam',\
     df = df.applymap(lambda x: rounding(x))
     df = df.astype(str)
     htable = get_html_table(df)
-    with open(path+'/'+'AllForcings_'+season+'.html','w') as f:
+    with open(path+'/'+'Forcing_'+season+'_latlon.html','w') as f:
         f.write(htable)
 
 def getVmap(data,ranges,ax,unit,cm=plt.cm.jet,cbs=0,cbi=1,cbe=-1):
