@@ -7,10 +7,9 @@
     <title>Aerosol Diagnostics</title>
     <style type="text/css">
         body {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 16px;
-            padding: 2% 10%;
-            background-color: #F7F7F7;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
         }
 
         h1 {
@@ -23,6 +22,8 @@
             font-size: 20px;
             margin-top: 20px;
             margin-bottom: 10px;
+            padding-left: 200px;
+            padding-top: 50px
         }
 
         p, li {
@@ -52,6 +53,7 @@
         ul {
             list-style-type: none;
             padding-left: 0;
+            padding-left: 200px;
         }
 
         li {
@@ -64,12 +66,43 @@
             margin-left: 0;
             padding-left: 0;
             border-left: none;
+            padding-left: 200px;
+            padding-top: 100px;
         }
+
+        /* Header styles */
+        header {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 0;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        footer {
+            text-align: center;
+            padding: 0.5rem 0;
+            background-color: #333;
+            color: #fff;
+            font-size: 0.8em;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            z-index: 999;
+            box-shadow: 0px -3px 10px rgba(0, 0, 0, 0.2);
+        }
+
     </style>
 </head>
 
 <body>
-    <h1>PNNL Aerosol Diagnostics</h1>
+    <header>
+        <h1>PNNL Aerosol Diagnostics</h1>
+    </header>
 
     <blockquote>
         <p>Test case: <span class="caa">F20TR_v2_ndg_ERA5_SEdata_NA_RRM</span></p>
@@ -92,6 +125,10 @@
         <li><span class="red">4.</span> Size distribution plots</li>
         <li><span class="red">5.</span> Satellite simulator plots</li>
     </ul>
+
+    <footer>
+        <p>© 2023 Pacific Northwest National Laboratory. All rights reserved.</p>
+    </footer>
 </body>
 
 </html>
