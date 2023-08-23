@@ -69,7 +69,7 @@ def get_hplots(path,case,ts,aer,plev=None,mod='eam',reg=None,land=None):
     elif plev == '0':
         tlev=data.lev[-1].values
         data = data.sel(lev=tlev)
-        pval = '1013'
+        pval = '0'
         fact = factbb
     if aer=='num':
         if plev!=None:

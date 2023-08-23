@@ -93,7 +93,7 @@ def main():
     start = time.perf_counter()
     # if __name__ == '__main__':
     if hp == None:
-        pv_name = {'1013':'Surface concentration',
+        pv_name = {'0':'Surface concentration',
                    '850':'Concentration at 850 hPa',
                    '500':'Concentration at 500 hPa',
                    '250':'Concentration at 250 hPa'
