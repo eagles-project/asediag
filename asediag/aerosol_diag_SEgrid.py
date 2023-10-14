@@ -29,7 +29,7 @@ def get_hplots(path,case,ts,aer,plev=None,mod='eam',reg=None,land=None):
         lon = data['lon']
         lon[lon > 180.] -= 360.
     except:
-        data = xr.open_mfdataset(path+case+'*'+ts+'*_climo.nc').isel(time=0)
+        data = xr.open_mfdataset(path+case+'*'+ts+'_*_climo.nc').isel(time=0)
         lon = xr.where(data.lon > 180,data.lon-360,data.lon)
         lon = lon.assign_coords(lon=lon.values)
         data['lon'] = lon
@@ -122,7 +122,7 @@ def get_vplots(path,case,ts,aer,mod='eam',lats=None,lons=None):
         lon = data['lon']
         lon[lon > 180.] -= 360.
     except:
-        data = xr.open_mfdataset(path+case+'*'+ts+'*_climo.nc').isel(time=0)
+        data = xr.open_mfdataset(path+case+'*'+ts+'_*_climo.nc').isel(time=0)
         lon = xr.where(data.lon > 180,data.lon-360,data.lon)
         lon = lon.assign_coords(lon=lon.values)
         data['lon'] = lon
@@ -195,7 +195,7 @@ def get_svplots(path,case,ts,var_vars,mod='eam',lats=None,lons=None):
         lon = data['lon']
         lon[lon > 180.] -= 360.
     except:
-        data = xr.open_mfdataset(path+case+'*'+ts+'*_climo.nc').isel(time=0)
+        data = xr.open_mfdataset(path+case+'*'+ts+'_*_climo.nc').isel(time=0)
         lon = xr.where(data.lon > 180,data.lon-360,data.lon)
         lon = lon.assign_coords(lon=lon.values)
         data['lon'] = lon
@@ -249,14 +249,14 @@ def get_singleV_hplots(path,case,ts,var,fact=1,vertinit=None,pval='radiation',mo
         lon = data['lon']
         lon[lon > 180.] -= 360.
     except:
-        data = xr.open_mfdataset(path+case+'*'+ts+'*_climo.nc').isel(time=0)
+        data = xr.open_mfdataset(path+case+'*'+ts+'_*_climo.nc').isel(time=0)
         lon = xr.where(data.lon > 180,data.lon-360,data.lon)
         lon = lon.assign_coords(lon=lon.values)
         data['lon'] = lon
         lon = lon.sortby(lon)
         data = data.sortby('lon')
     lat = data['lat']
-    if ts=='ANN':
+    if 'year' in data.coords:
         data = data.rename({'year':'season'})   
     ## factors
     grav = 9.806
@@ -282,7 +282,8 @@ def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam',indl=None,land=False
         lon = data['lon'].values
         lon[lon > 180.] -= 360.
     except:
-        data = xr.open_mfdataset(path+case+'*'+ts+'*_climo.nc').isel(time=0)
+        print(path+case+'*'+ts+'_*_climo.nc')
+        data = xr.open_mfdataset(path+case+'*'+ts+'_*_climo.nc').isel(time=0)
         lon = xr.where(data.lon > 180,data.lon-360,data.lon)
         lon = lon.assign_coords(lon=lon.values)
         data['lon'] = lon
@@ -832,7 +833,7 @@ def get_forcing_df(path1,path2,case1,case2,path,season='ANN',mod='eam',\
         lon = datadef['lon'].values
         lon[lon > 180.] -= 360.
     except:
-        datadef = xr.open_mfdataset(path1+case1+'*'+season+'*_climo.nc').isel(time=0)
+        datadef = xr.open_mfdataset(path1+case1+'*'+season+'_*_climo.nc').isel(time=0)
         lon = xr.where(datadef.lon > 180,datadef.lon-360,datadef.lon)
         lon = lon.assign_coords(lon=lon.values)
         datadef['lon'] = lon
@@ -844,7 +845,7 @@ def get_forcing_df(path1,path2,case1,case2,path,season='ANN',mod='eam',\
         lon = datase['lon'].values
         lon[lon > 180.] -= 360.
     except:
-        datase = xr.open_mfdataset(path2+case2+'*'+season+'*_climo.nc').isel(time=0)
+        datase = xr.open_mfdataset(path2+case2+'*'+season+'_*_climo.nc').isel(time=0)
         lon = xr.where(datase.lon > 180,datase.lon-360,datase.lon)
         lon = lon.assign_coords(lon=lon.values)
         datase['lon'] = lon

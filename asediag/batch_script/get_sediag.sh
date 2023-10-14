@@ -1,10 +1,11 @@
 #!/bin/bash -l
-#SBATCH --job-name=sediag
+#SBATCH --job-name=asediag
 #SBATCH --output=<logDir>/sediag.o%j
 #SBATCH --account=<account>
 #SBATCH --nodes=1
 #SBATCH --time=<wallMin>
-#SBATCH --partition=<partition>
+#SBATCH --qos=<partition>
+#SBATCH --constraint=cpu
 
 source <source>
 # user-defined environment
