@@ -34,3 +34,5 @@ Acknowledgement
 * Jian Sun & Kai Zhang: [Aerosol number and species per mode budget and spatial distribution analysis](https://github.com/eagles-project/aerosol_diag/tree/jian/develop)
 * Jianfeng Li: [Aerosol optics diagnostics](https://github.com/eagles-project/aerosol_diag/tree/jianfeng_update)
 * Kai Zhang: [Aerosol forcing diagnostics](https://github.com/kaizhangpnl/e3sm_erf_aerosol)
+
+**Note:** Currently undegoing small patchworks and further developments
