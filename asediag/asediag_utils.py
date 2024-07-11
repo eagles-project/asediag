@@ -1,6 +1,26 @@
+import logging
 import numpy as np
 import pandas as pd
 from pathlib import Path
+from subprocess import Popen, PIPE, STDOUT
+
+def exec_shell(cmd):
+    '''func to execute shell commands'''
+    cmd_split = cmd.split(' ')
+    p = Popen(cmd_split, stdout=PIPE, stdin=PIPE, stderr=STDOUT, universal_newlines=True)
+    op, _ = p.communicate()
+    logger = logging.getLogger('log.asediag')
+    logger.info('\n[cmd]: ' + cmd+ '\n')
+
+def setup_output_directory(out_directory, case1, case2, region, child = ''):
+    path = Path(out_directory) / f'{case2}_minus_{case1}_{region}' / f'{child}'
+    if path.exists():
+        logging.info(f'Output directory already exists: {path}')
+    else:
+        path.mkdir(parents=True)
+        logging.info(f'Selected output directory: {path}')
+        logging.info('All shell scripts and log files will be stored here.')
+    return path
 
 def get_dir_path(path):
     if (path == ''):
@@ -32,6 +52,31 @@ def rounding(n):
             return '-'
     else:
         return '{:.0e}'.format(n)
+
+def get_latlon(reg):
+    regions = {'CONUS':'24.74 49.34 -124.78 -66.95',\
+              'NA':'15 72 -167 -50',\
+              'EUS':'24.74 49.34 -97 -66.95',\
+              'ECN':'18 45 90 130',\
+              'IND':'6 40 66 98',\
+              'CAF':'-5 20 -18 50', \
+              'SH_pole':'-90 -60 -180 180',\
+              'SH_midlat':'-60 -30 -180 180',\
+              'Tropics':'-30 30 -180 180',\
+              'NH_midlat':'30 60 -180 180',\
+              'NH':'0 90 -180 180',\
+              'SH':'-90 0 -180 180',\
+              'NH_pole':'60 90 -180 180',\
+              'Global':'-90 90 -180 180',\
+              'CUS':'31 41 -104 -91',\
+              'ENA':'32 46 -33 -21',\
+              'NEP':'30 50 -160 -120',\
+              'SO':'-60 -40 130 165'}
+    lat1 = float(regions[reg].split(' ')[0])
+    lat2 = float(regions[reg].split(' ')[1])
+    lon1 = float(regions[reg].split(' ')[2])
+    lon2 = float(regions[reg].split(' ')[3])
+    return lat1,lat2,lon1,lon2
 
 def get_local(reg):
     loclatlon = {'SGP':'36.605 -97.485',\
@@ -83,15 +128,15 @@ def group_duplicate_index(df):
 def get_html(form,title,extra=[],locations=[],fmt=None,listofvs=None,spfull_vars=None):     
     df = pd.DataFrame()
     if listofvs == None:
-        listofvs = ['bc','bc_a1', 'bc_a3', 'bc_a4', 'bc_c1', 'bc_c3', 'bc_c4',\
-                   'so4','so4_a1', 'so4_a2', 'so4_a3', 'so4_c1', 'so4_c2', 'so4_c3',\
-                   'dst','dst_a1', 'dst_a3', 'dst_c1', 'dst_c3',\
-                   'mom','mom_a1', 'mom_a2', 'mom_a3', 'mom_a4', 'mom_c1', 'mom_c2', 'mom_c3', 'mom_c4',\
-                   'pom','pom_a1', 'pom_a3', 'pom_a4', 'pom_c1', 'pom_c3', 'pom_c4',\
-                   'ncl','ncl_a1', 'ncl_a2', 'ncl_a3', 'ncl_c1', 'ncl_c2', 'ncl_c3',\
-                   'soa','soa_a1', 'soa_a2', 'soa_a3', 'soa_c1', 'soa_c2', 'soa_c3',\
-                   'num','num_a1', 'num_a2', 'num_a3', 'num_a4', 'num_c1', 'num_c2', 'num_c3', 'num_c4',\
-                   'SO2','DMS','H2SO4']+['']+extra
+        listofvs = ['bc','bc_accum','bc_coarse','bc_pcarbon','bc_a1', 'bc_a3', 'bc_a4', 'bc_c1', 'bc_c3', 'bc_c4',\
+                   'so4','so4_accum','so4_aitken','so4_coarse','so4_a1', 'so4_a2', 'so4_a3', 'so4_c1', 'so4_c2', 'so4_c3',\
+                   'dst','dst_accum','dst_coarse','dst_a1', 'dst_a3', 'dst_c1', 'dst_c3',\
+                   'mom','mom_accum','mom_aitken','mom_coarse','mom_pcarbon','mom_a1', 'mom_a2', 'mom_a3', 'mom_a4', 'mom_c1', 'mom_c2', 'mom_c3', 'mom_c4',\
+                   'pom','pom_accum','pom_coarse','pom_pcarbon','pom_a1', 'pom_a3', 'pom_a4', 'pom_c1', 'pom_c3', 'pom_c4',\
+                   'ncl','ncl_accum','ncl_aitken','ncl_coarse','ncl_a1', 'ncl_a2', 'ncl_a3', 'ncl_c1', 'ncl_c2', 'ncl_c3',\
+                   'soa','soa_accum','soa_aitken','soa_coarse','soa_a1', 'soa_a2', 'soa_a3', 'soa_c1', 'soa_c2', 'soa_c3',\
+                   'num','num_accum','num_aitken','num_coarse','num_pcarbon','num_a1', 'num_a2', 'num_a3', 'num_a4', 'num_c1', 'num_c2', 'num_c3', 'num_c4',\
+                   'SO2','DMS','H2SO4','SOAG']+['']+extra
     else:
         listofvs = listofvs + extra
 
@@ -108,6 +153,11 @@ def get_html(form,title,extra=[],locations=[],fmt=None,listofvs=None,spfull_vars
         'SO2': '<div style="position:relative;"><a id="so2" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>SO2</strong></span></div>',
         'DMS': '<div style="position:relative;"><a id="dms" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>DMS</strong></span></div>',
         'H2SO4': '<div style="position:relative;"><a id="h2so4" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>H2SO4</strong></span></div>',
+        'SOAG': '<div style="position:relative;"><a id="soag" style="position:absolute; top:-90px;"></a><span style="color: red;"><strong>SOAG</strong></span></div>',
+        'accum': '<div style="position:relative;"><a id="ACCUM" style="position:absolute; top:-90px;"></a><span style="color: black;"><strong>accum</strong></span></div>',
+        'aitken': '<div style="position:relative;"><a id="AITKEN" style="position:absolute; top:-90px;"></a><span style="color: black;"><strong>aitken</strong></span></div>',
+        'coarse': '<div style="position:relative;"><a id="COARSE" style="position:absolute; top:-90px;"></a><span style="color: black;"><strong>coarse</strong></span></div>',
+        'pcarbon': '<div style="position:relative;"><a id="PCARBON" style="position:absolute; top:-90px;"></a><span style="color: black;"><strong>pcarbon</strong></span></div>',
         }
     else:
         spfull = {}
@@ -118,7 +168,10 @@ def get_html(form,title,extra=[],locations=[],fmt=None,listofvs=None,spfull_vars
             
     
     tmp = ' '*16
-    for key in spfull.keys():
+    allKeys = list(spfull.keys())
+    mode_list = {'accum', 'aitken', 'coarse', 'pcarbon'}
+    filtered_key_list = [item for item in allKeys if item not in mode_list]
+    for key in filtered_key_list:
         name = spfull[key].split('<strong>')[1].split('</strong>')[0]
         idval = spfull[key].split('id=')[1].split(' ')[0].strip('"')
         tmp = tmp + '<li><a href="#'+idval+'">'+name+'</a></li>\n'+' '*16
@@ -127,15 +180,22 @@ def get_html(form,title,extra=[],locations=[],fmt=None,listofvs=None,spfull_vars
     df['DJF']=df['Variable'].apply(lambda x: '<a href="{}_{}">DJF</a>'.format(x,form.replace('season','DJF')))
     df['JJA']=df['Variable'].apply(lambda x: '<a href="{}_{}">JJA</a>'.format(x,form.replace('season','JJA')))
     df['ANN']=df['Variable'].apply(lambda x: '<a href="{}_{}">ANN</a>'.format(x,form.replace('season','ANN')))
-    
+
     if fmt == None:
         fmt = form.split('.')[1]
     for loc in locations:
         df[loc]=df['Variable'].apply(lambda x: '<a href="{}_{}">{}</a>'.format(x,form.split('.')[0].replace('season',loc)+'.'+fmt,loc))
     
+    df['Variable'] = df['Variable'].replace({
+                                            r'.*_accum$': 'accum',
+                                            r'.*_aitken$': 'aitken',
+                                            r'.*_coarse$': 'coarse',
+                                            r'.*_pcarbon$': 'pcarbon'
+                                            }, regex=True)
+    
     df['Variable']=df['Variable'].map(spfull).fillna(df['Variable'])
     df.columns = ['Variable','','Seasons',' ']+locations
-    
+
     # Table styling
     styles = [
         {
@@ -466,7 +526,7 @@ def html_template(title,html,tmp):
         </div>
     
         <footer>
-            <p> 2023 Pacific Northwest National Laboratory. All rights reserved.</p>
+            <p>&#169; 2023 Pacific Northwest National Laboratory. All rights reserved.</p>
         </footer>
     
     </body>

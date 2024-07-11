@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aerosol Diagnostics</title>
+    <style type="text/css">
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            border-bottom: 2px solid #E0E0E0;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: #333;
+            font-size: 20px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            padding-left: 200px;
+            padding-top: 25px
+        }
+
+        p, li {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .caa, .red {
+            color: #D32F2F;
+            font-weight: bold;
+        }
+
+        .aac {
+            color: #1976D2;
+            font-weight: bold;
+        }
+
+        a {
+            color: #1976D2;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        ul > li {
+            list-style-type: none;
+            padding-left: 0;
+            padding-left: 150px;
+        }
+
+        li {
+            margin-left: 20px;
+        }
+
+        ul > li > ul {
+            padding-left: 50px;
+        }
+
+        blockquote {
+            background-color: #FFF;
+            margin-bottom: 20px;
+            margin-left: 0;
+            padding-left: 0;
+            border-left: none;
+            padding-left: 200px;
+            padding-top: 100px;
+        }
+
+        /* Header styles */
+        header {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 0;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        footer {
+            text-align: center;
+            padding: 0.5rem 0;
+            background-color: #333;
+            color: #fff;
+            font-size: 0.8em;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            z-index: 999;
+            box-shadow: 0px -3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>PNNL Aerosol Diagnostics</h1>
+    </header>
+
+    <blockquote>
+        <p>Test case: <span class="caa">Test_case</span></p>
+        <p>Control case: <span class="aac">Control_case</span></p>
+    </blockquote>
+
+    <h2>Model-to-Model Comparison</h2>
+    <ul>
+        <li><span class="red">1.</span> <a href="tables/index.html">Aerosol budget</a></li>
+        <li><span class="red">2.</span> <a href="set01/index.html">Vertical contour plots of zonal means</a></li>
+        <ul>
+            <li><span class="red">a.</span> <a href="set01/index_orig.html">Aerosol modes</a></li>
+            <li><span class="red">b.</span> <a href="set01/index_other.html">Other variables</a></li>
+        </ul>
+        <li><span class="red">3.</span> <a href="set02/index.html">Horizontal contour plots</a></li>
+        <ul>
+            <li><span class="red">a.</span> <a href="set02/index_burden.html">Column-integrated burden</a></li>
+            <li><span class="red">b.</span> <a href="set02/index_1000.html">Surface concentration</a></li>
+            <li><span class="red">c.</span> <a href="set02/index_850.html">Concentration at 850 hPa</a></li>
+            <li><span class="red">d.</span> <a href="set02/index_500.html">Concentration at 500 hPa</a></li>
+            <li><span class="red">e.</span> <a href="set02/index_250.html">Concentration at 200 hPa</a></li>
+            <li><span class="red">f.</span> <a href="set02/index_other.html">Other variables</a></li>
+        </ul>
+        <li><span class="red">4.</span> <a href="set02RF/index.html">Radiative Forcing analysis</a></li>
+    </ul>
+
+    <h2>Model-to-Observation Comparison</h2>
+    <ul>
+        <li><span class="red">1.</span> <a href="set03/index.html">Scatter plots</a></li>
+        <li><span class="red">2.</span> <a href="set04/index.html">Vertical profile plots</a></li>
+        <li><span class="red">3.</span> <a href="set05/index.html">Seasonal cycle plots</a></li>
+        <li><span class="red">4.</span> Size distribution plots</li>
+        <li><span class="red">5.</span> Satellite simulator plots</li>
+    </ul>
+
+    <footer>
+        <p>© 2023 Pacific Northwest National Laboratory. All rights reserved.</p>
+    </footer>
+</body>
+
+</html>

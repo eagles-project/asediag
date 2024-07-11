@@ -3,12 +3,14 @@ import argparse
 from itertools import product
 import multiprocessing as mp
 from pathlib import Path
-import pkg_resources
 import shutil
+import importlib.resources as pkg_resources
 
 from asediag.aerosol_diag_SEgrid import get_forcing_df, gather_ProfData, get_vert_profiles
-from asediag.aerosol_diag_SEgrid import gather_data, get_map, get_all_tables, get_local_profiles
-from asediag.asediag_utils import get_html, get_plocal, html_template
+from asediag.aerosol_diag_SEgrid import gather_data, get_map, get_local_profiles
+from asediag.asediag_utils import get_html, get_plocal, html_template, setup_output_directory
+from asediag.gen_budgets import GenAerosolBudgets
+from asediag.gen_spatial_distr import GenSpatialData, gen_4panel_maps
 
 def main():
 
@@ -65,76 +67,68 @@ def main():
     if case2 == None:
         case2 = path2.strip().split('/')[-3]
         
-    ## This directories are moved earlier for batch submissions
-    path = str(outpath)+'/'+case2+'_minus_'+case1
-    print('\nSelected output directoy:',path)
+    ## Setting output path and copying template frontend html
+    path = setup_output_directory(outpath, case1, case2, region)
     ## copying the template content to out dir (i.e. outpath)
-    ## Getting rid of template directory would be best
-    resource_package = __name__
-    resource_path = 'template'
-    tmp = pkg_resources.resource_filename(resource_package, resource_path)
-    try:
-        shutil.copytree(tmp, path)
-    except FileExistsError:
-        print('\nPath already exists!')
-        pass
-    except:
-        print('\nCan not create directory:',tmp)
-    # Rewriting the frontend here
-    # !!This can be modified...Looks weird!!
-    with open(tmp+'/aerosol.html','r') as file:
+    package_name = 'asediag'
+    with pkg_resources.open_text(package_name, 'aerosol_temp.html') as file:
         filedata = file.read()
-        filedata = filedata.replace('Test_case',case2)
-        filedata = filedata.replace('Control_case',case1)
-    with open(path+'/aerosol.html','w') as file:
+        filedata = filedata.replace('Test_case',case2+'_'+region)
+        filedata = filedata.replace('Control_case',case1+'_'+region)
+    with open(path / 'aerosol.html','w') as file:
         file.write(filedata)
         
     aer_list = ['bc','so4','dst','mom','pom','ncl','soa','num']    
     start = time.perf_counter()
-    # if __name__ == '__main__':
+
     if hp == None:
-        pv_name = {'0':'Surface concentration',
+        mapPath = setup_output_directory(outpath, case1, case2, region, child='set02')
+        pv_name = {'1000':'Surface concentration',
                    '850':'Concentration at 850 hPa',
                    '500':'Concentration at 500 hPa',
                    '250':'Concentration at 250 hPa'
                    }
         
         aer_list = ['bc','so4','dst','mom','pom','ncl','soa','num','DMS','SO2','H2SO4']
-        
+
         if pv == None:
             html,title,tmp = get_html("season_latlon_bdn.png","Column-integrated burden")
             html_code = html_template(title,html,tmp)
-            with open(path+'/set02/index_burden.html','w') as file:
+            with open(mapPath / 'index_burden.html','w') as file:
                 file.write(html_code)
         else:
             html,title,tmp = get_html("season_latlon_"+str(pv)+".png",pv_name[str(pv)])
             html_code = html_template(title,html,tmp)
-            with open(path+'/set02/index_'+str(pv)+'.html','w') as file:
+            with open(mapPath / str('index_'+str(pv)+'.html'),'w') as file:
                 file.write(html_code)
 
         for aer in aer_list[:]:
             print('getting data\n')
             print(path1,path2)
             print(path1.strip().split('/')[-3],pv)
-            aa=gather_data(path1,aer,case1,model,plev=pv,reg=region,land=lnd)
-            bb=gather_data(path2,aer,case2,model,plev=pv,reg=region,land=lnd)
+            CntlMapInfo = GenSpatialData(path1,case1,aer,mod=model,plev=pv,reg=region,land=lnd,scrip=sc)
+            TestMapInfo = GenSpatialData(path2,case2,aer,mod=model,plev=pv,reg=region,land=lnd,scrip=sc)
+            aa = CntlMapInfo.gather_data()
+            bb = TestMapInfo.gather_data()
             aa[0].load()
             bb[0].load()
             aa[1].load()
             bb[1].load()
             lon = aa[5].round()
             lat = aa[6].round()
+
             if 'ncol' in aa[0].dims:
                 lon = lon.values
                 lat = lat.values
+
             print('Loaded data\n')
             diff = bb[0]-aa[0]
             rel = (diff/abs(aa[0]))*100
             processes=[]
-            for ind,var in product([0,1,2],aa[2]):
-                p = mp.Process(target=get_map,args=[aa[0][var],bb[0][var],diff[var],rel[var],var,ind,case1,case2,\
+            for ind,var in product([0,1,2],aa[2][:]):
+                p = mp.Process(target=gen_4panel_maps,args=[aa[0][var],bb[0][var],diff[var],rel[var],var,ind,case1,case2,\
                                         aa[1][var],bb[1][var],aa[3],aa[4],lon,lat],\
-                                       kwargs={'scrip':sc,'path':path+'/set02','reg':region})
+                                       kwargs={'scrip':sc,'path':mapPath,'reg':region})
                 p.start()
                 processes.append(p)
             for process in processes:
@@ -143,35 +137,47 @@ def main():
         print('\nPlotting is muted\n')
 
     if vl != None:
+        mapPath = setup_output_directory(outpath, case1, case2, region, child='set02')
         vlist = vl.split(',')
         vunits = vunit.split(',')
         assert len(vlist) == len(vunits), "List of variables and units should have the same length!"
         spfull_vars = ['AODVIS','AODBC','AODMODE1','BURDENBC','BURDEN1'] # Hard-coded for utility
         html,title,tmp = get_html("season_latlon_radiation.png","Other variables",listofvs=vlist,spfull_vars=spfull_vars,extra=[''])
         html_code = html_template(title,html,tmp)
-        with open(path+'/set02/index_other.html','w') as file:
+        with open(mapPath / 'index_other.html','w') as file:
             file.write(html_code)
         print('getting data\n')
         print(path1,path2)
         print('\nPlotting all the extra variables\n')
-        aa=gather_data(path1,vlist,case1,model,sv='y')
-        bb=gather_data(path2,vlist,case2,model,sv='y')
+        CntlMapInfo = GenSpatialData(path1,case1,vlist,mod=model,plev=pv,reg=region,land=lnd,scrip=sc,sv='y')
+        TestMapInfo = GenSpatialData(path2,case2,vlist,mod=model,plev=pv,reg=region,land=lnd,scrip=sc,sv='y')
+        aa = CntlMapInfo.gather_data()
+        bb = TestMapInfo.gather_data()
         aa[0].load()
         bb[0].load()
         aa[1].load()
         bb[1].load()
         lon = aa[5].round()
         lat = aa[6].round()
+
+        if 'ncol' in aa[0].dims:
+                lon = lon.values
+                lat = lat.values
+
         print('Loaded data\n')
         diff = bb[0]-aa[0]
         rel = (diff/abs(aa[0]))*100
         vlist = aa[2]
         processes=[]
-        for ind,var in product([0,1,2],vlist):
+        for ind,var in product([0,1,2],vlist[:]):
             unit = vunits[vlist.index(var)]
-            get_map(aa[0][var],bb[0][var],diff[var],rel[var],var,ind,case1,case2,\
-                    aa[1][var],bb[1][var],aa[3],unit,lon,lat,\
-                    scrip=sc,path=path+'/set02',reg=region)
+            p = mp.Process(target=gen_4panel_maps,args=[aa[0][var],bb[0][var],diff[var],rel[var],var,ind,case1,case2,\
+                                        aa[1][var],bb[1][var],aa[3],aa[4],lon,lat],\
+                                       kwargs={'scrip':sc,'path':mapPath,'reg':region})
+            p.start()
+            processes.append(p)
+        for process in processes:
+            process.join()
 
     if profile != None:
         sites,lats,lons = get_plocal(local)
@@ -210,6 +216,7 @@ def main():
                 process.join()
                 
     if extraprof != None:
+        ExtraProfPath = setup_output_directory(outpath, case1, case2, region, child='set01')
         sites,lats,lons = get_plocal(local)
         eprof_list = extraprof.split(',')
         gunits = gunit.split(',')
@@ -217,7 +224,7 @@ def main():
         spfull_vars = ['CCN3','dgnd_a01','dgnw_a01','bc_a1_sfgaex1','bc_a1_sfcoag1'] # Hard-coded for utility
         html,title,tmp = get_html("season_lathgt.png","Vertical contour plots of zonal means",locations=sites,listofvs=eprof_list,spfull_vars=spfull_vars,extra=[''])
         html_code = html_template(title,html,tmp)
-        with open(path+'/set01/index_other.html','w') as file:
+        with open(ExtraProfPath / 'index_other.html','w') as file:
             file.write(html_code)
         print('getting data\n')
         print(path1,path2)
@@ -236,29 +243,57 @@ def main():
             ddiff = d2 - d1
             drel = (ddiff/abs(d1))*100
             for var in aa[1]:
-                get_local_profiles(d1[var],d2[var],ddiff[var],drel[var],var,case1,case2,sites[i],path=path+'/set01')
+                get_local_profiles(d1[var],d2[var],ddiff[var],drel[var],var,case1,case2,sites[i],path=ExtraProfPath)
 
         processes=[]
         for ind,var in product([0,1,2],aa[1]):
             unit = gunits[eprof_list.index(var)]
             p = mp.Process(target=get_vert_profiles,args=[aa[0][var],bb[0][var],diff[var],rel[var],var,ind,case1,case2,\
-                                    ],kwargs={'path':path+'/set01','gunit':unit})
+                                    ],kwargs={'path':ExtraProfPath,'gunit':unit})
             p.start()
             processes.append(p)
         for process in processes:
             process.join()
 
     if (tb != None) and (splot == None):
-        aer_list = ['bc','so4','dst','mom','pom','ncl','soa','num','DMS','SO2','H2SO4']
+        aer_list = ['bc','so4','dst','mom','pom','ncl','soa','num','DMS','SO2','H2SO4','SOAG']
         print('\nProducing all budget tables')
         html, title,tmp = get_html("season.html","Aerosol budget",locations=['Figure'],fmt='png')
         html_code = html_template(title,html,tmp)
-        with open(path+'/tables/index.html','w') as file:
+        tabPath = setup_output_directory(outpath, case1, case2, region, child='tables')
+        with open(tabPath / 'index.html','w') as file:
             file.write(html_code)
         for aer in aer_list[:]:
             processes=[]
             for ind in [0,1,2]:
-                p = mp.Process(target=get_all_tables,args=[ind,aer,path1,path2,case1,case2,path+'/tables',region,local,model,lnd,splot])
+                genBudget = GenAerosolBudgets(ind,aer,path1,path2,case1,case2,str(tabPath),region,local,model,lnd,splot)
+                p = mp.Process(target=genBudget.generate_html_tables)
+                p.start()
+                processes.append(p)
+            for process in processes:
+                process.join()
+
+    if splot != None:
+        aer_list = ['bc','so4','pom','soa','num','DMS','SO2','H2SO4','SOAG']
+        print('\nProducing all budget table figures')
+        html, title,tmp = get_html("season.html","Aerosol budget",locations=['Figure'],fmt='png')
+        html_code = html_template(title,html,tmp)
+        tabPath = setup_output_directory(outpath, case1, case2, region, child='tables')
+        with open(tabPath / 'index.html','w') as file:
+            file.write(html_code)
+        for aer,ind in product(aer_list[:],[0]):
+            ss = ['ANN','DJF','JJA']
+            print('\nTable variable plots for:',aer,ss[ind])
+            genBudget = GenAerosolBudgets(ind,aer,path1,path2,case1,case2,str(tabPath),region,local,model,lnd,splot)
+            columns = genBudget.generate_html_tables()
+            d1, d2, diff, rel, vlist = genBudget.get_budget_SpData()
+            d1.load()
+            d2.load()
+            diff.load()
+            rel.load()
+            processes=[]
+            for col in columns:
+                p = mp.Process(target=genBudget.gen_budget_spatialMaps,args=[d1,d2,diff,rel,vlist,col,sc])
                 p.start()
                 processes.append(p)
             for process in processes:

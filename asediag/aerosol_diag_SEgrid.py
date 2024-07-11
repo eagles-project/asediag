@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import cartopy.crs as crs
 from asediag.nclCols import amwg256_map, BlueWhiteOrangeRed_map
 from asediag.aerdiag_plots import get_plots
-from asediag.asediag_utils import rounding, get_html_table, get_vertint
+from asediag.asediag_utils import rounding, get_html_table, get_vertint, get_latlon
 from asediag.asediag_utils import gen_colbar_range, get_local, get_plocal, get_nearestlatlon
 import matplotlib
 import fnmatch
@@ -20,22 +20,30 @@ import matplotlib.gridspec as gridspec
 import warnings
 warnings.filterwarnings('ignore')
 
+from asediag.aer_budget_analysis import AerosolBudgetCalculator
+
 ##########################################################################
 ##########################################################################    
 def get_hplots(path,case,ts,aer,plev=None,mod='eam',reg=None,land=None):
     ## reading data as xarray
     try:
+        print('SE data:',path+case+'.'+mod+'.'+ts+'.*_climo.nc')
         data = xr.open_mfdataset(path+case+'.'+mod+'.'+ts+'.*_climo.nc')
         lon = data['lon']
+        lon.load()
         lon[lon > 180.] -= 360.
     except:
-        data = xr.open_mfdataset(path+case+'*'+ts+'_*_climo.nc').isel(time=0)
+        print('Lat/Lon data:',path+case+'*'+ts+'_*_climo.nc')
+        data = xr.open_mfdataset(path+case+'*'+ts+'_*_climo.nc')
+        if 'time' in data.dims:
+            data = data.isel(time=0)
         lon = xr.where(data.lon > 180,data.lon-360,data.lon)
         lon = lon.assign_coords(lon=lon.values)
         data['lon'] = lon
         lon = lon.sortby(lon)
         data = data.sortby('lon')
     lat = data['lat']  
+    
     if reg!=None:
         lat1,lat2,lon1,lon2=get_latlon(reg)
     else:
@@ -44,6 +52,7 @@ def get_hplots(path,case,ts,aer,plev=None,mod='eam',reg=None,land=None):
     
     if 'year' in data.coords:
         data = data.rename({'year':'season'})
+    data['season'] = ts
     pval = 'bdn'
     fact = 1e9
     factaa = 1.01325e5 / 8.31446261815324 / 273.15 * 28.9647 / 1.e9   # kg-air/cm3-air
@@ -122,7 +131,9 @@ def get_vplots(path,case,ts,aer,mod='eam',lats=None,lons=None):
         lon = data['lon']
         lon[lon > 180.] -= 360.
     except:
-        data = xr.open_mfdataset(path+case+'*'+ts+'_*_climo.nc').isel(time=0)
+        data = xr.open_mfdataset(path+case+'*'+ts+'_*_climo.nc')
+        if 'time' in data.dims:
+            data = data.isel(time=0)
         lon = xr.where(data.lon > 180,data.lon-360,data.lon)
         lon = lon.assign_coords(lon=lon.values)
         data['lon'] = lon
@@ -195,7 +206,9 @@ def get_svplots(path,case,ts,var_vars,mod='eam',lats=None,lons=None):
         lon = data['lon']
         lon[lon > 180.] -= 360.
     except:
-        data = xr.open_mfdataset(path+case+'*'+ts+'_*_climo.nc').isel(time=0)
+        data = xr.open_mfdataset(path+case+'*'+ts+'_*_climo.nc')
+        if 'time' in data.dims:
+            data = data.isel(time=0)
         lon = xr.where(data.lon > 180,data.lon-360,data.lon)
         lon = lon.assign_coords(lon=lon.values)
         data['lon'] = lon
@@ -245,11 +258,15 @@ def get_svplots(path,case,ts,var_vars,mod='eam',lats=None,lons=None):
 def get_singleV_hplots(path,case,ts,var,fact=1,vertinit=None,pval='radiation',mod='eam'):
     ## reading data as xarray
     try:
+        print('SE data:',path+case+'.'+mod+'.'+ts+'.*_climo.nc')
         data = xr.open_mfdataset(path+case+'.'+mod+'.'+ts+'.*_climo.nc')
         lon = data['lon']
         lon[lon > 180.] -= 360.
     except:
-        data = xr.open_mfdataset(path+case+'*'+ts+'_*_climo.nc').isel(time=0)
+        print('Lat/Lon data:',path+case+'*'+ts+'_*_climo.nc')
+        data = xr.open_mfdataset(path+case+'*'+ts+'_*_climo.nc')
+        if 'time' in data.dims:
+            data = data.isel(time=0)
         lon = xr.where(data.lon > 180,data.lon-360,data.lon)
         lon = lon.assign_coords(lon=lon.values)
         data['lon'] = lon
@@ -275,356 +292,6 @@ def get_singleV_hplots(path,case,ts,var,fact=1,vertinit=None,pval='radiation',mo
     ## actual mean
     mean = (vdata*area).sum(area.dims)/(area).sum(area.dims)
     return vdata,mean,var,pval,lon,lat
-
-def get_tables(path,case,ts,aer,reg=None,loc=None,mod='eam',indl=None,land=False,splot=None):
-    try:
-        data = xr.open_mfdataset(path+case+'.'+mod+'.'+ts+'.*_climo.nc')
-        lon = data['lon'].values
-        lon[lon > 180.] -= 360.
-    except:
-        print(path+case+'*'+ts+'_*_climo.nc')
-        data = xr.open_mfdataset(path+case+'*'+ts+'_*_climo.nc').isel(time=0)
-        lon = xr.where(data.lon > 180,data.lon-360,data.lon)
-        lon = lon.assign_coords(lon=lon.values)
-        data['lon'] = lon
-        lon = lon.sortby(lon)
-        data = data.sortby('lon')
-        indl = None
-    lat = data['lat']
-    if reg!=None:
-        lat1,lat2,lon1,lon2=get_latlon(reg)
-    elif loc!=None:
-        lat1,lon1=get_local(loc)
-        lat1,lat2,lon1,lon2 = get_nearestlatlon(lon1,lat1,lon,lat)
-    else:
-        lat1,lat2,lon1,lon2=lat.values.min(),lat.values.max(),lon.min(),lon.max()
-    if 'year' in data.coords:
-        data = data.rename({'year':'season'})
-    ## factors
-    fact = 1e-9
-    grav = 9.806
-    ha = data['hyai']
-    hb = data['hybi']
-    p0 = data['P0']
-    ps = data['PS']
-    area = data['area']*(6.37122e6)**2
-    landF = data['LANDFRAC']
-    avgod = 6.022e+23
-    mwso4 = 115.0
-    factaa  = mwso4*10.0/avgod        # convert molec/cm2/s to kg/m2/s
-    factaaa = 12.0*10.0/avgod         # convert molec/cm2/s to kg/m2/s
-    factbb  = 86400.0*365.0*1e-9      # convert kg/s to Tg/yr
-    if aer == 'num':  
-        factbb  = 86400.0*365.0
-        factaa = 1.e4/(avgod*1.e3)
-    factcc  = factbb/mwso4*32.066     # convert kg/s to TgS/yr
-    factdd  = 32.066/mwso4*1e-9       # convert kg to TgS
-    sum_airmass = ((ps*area).sum()/grav)*1e6
-    fact_kgpkg_kgpcm3 = 1.01325e5 / 8.31446261815324 / 273.15 * 28.9647 / 1.e9   # kg-air/cm3-air
-    fact_kgpcm3_ugpm3 = fact_kgpkg_kgpcm3 * 1e15
-    
-    ## all variable list
-    vlist = list(data.variables.keys())
-    # List of all variables considered
-    avariables = [aer+'_a?',aer+'_a?'+'DDF',aer+'_a?'+'SFWET','SF'+aer+'_a?',aer+'_a?'+'_CLXF',\
-     aer+'_a?'+'_sfgaex1',aer+'_a?'+'GVF',aer+'_a?'+'TBF',aer+'_a?'+'SFSIS',\
-     aer+'_a?'+'SFSIC',aer+'_a?'+'SFSBS',aer+'_a?'+'SFSBC',aer+'_a?'+'SFSES',\
-     aer+'_a?'+'SFSEC',aer+'_a?'+'_sfgaex2',aer+'_a?'+'_sfcoag1',aer+'_a?'+'_sfcsiz3',\
-     aer+'_a?'+'_sfcsiz4',aer+'_a?'+'_mixnuc1',aer+'_a?'+'AQH2SO4',\
-     aer+'_a?'+'AQSO4',aer+'_a?'+'_sfnnuc1','AQ_'+aer+'_a?','GS_'+aer+'_a?',aer+'_a?']
-    cvariables = [aer+'_c?',aer+'_c?'+'DDF',aer+'_c?'+'SFWET','SF'+aer+'_c?',aer+'_c?'+'_CLXF',\
-     aer+'_c?'+'_sfgaex1',aer+'_c?'+'GVF',aer+'_c?'+'TBF',aer+'_c?'+'SFSIS',\
-     aer+'_c?'+'SFSIC',aer+'_c?'+'SFSBS',aer+'_c?'+'SFSBC',aer+'_c?'+'SFSES',\
-     aer+'_c?'+'SFSEC','_sfgaex2',aer+'_c?'+'_sfcoag1',aer+'_c?'+'_sfcsiz3',\
-     aer+'_c?'+'_sfcsiz4',aer+'_c?'+'_mixnuc1',aer+'_c?'+'AQH2SO4',\
-     aer+'_c?'+'AQSO4',aer+'_c?'+'_sfnnuc1','AQ_'+aer+'_c?','GS_'+aer+'_c?',aer+'_c?']
-    
-    ## handle gas=phase species
-    gvars = ['SO2','DMS','H2SO4']
-    if aer in gvars:
-        avariables = str(avariables).replace('_a?','').replace("'",'').replace(' ','')[1:-1].replace(aer+'DDF','DF_'+aer).replace(aer+'SFWET','WD_'+aer).split(',')
-        cvariables = ['']*len(cvariables)
-    
-    # sfc emis
-    df = pd.DataFrame()
-    nvar=0
-    for avar,cvar in zip(avariables[:],cvariables[:]):
-        nvar+=1
-        var_avars = fnmatch.filter(vlist,avar)
-        var_cvars = fnmatch.filter(vlist,cvar)
-        var_vars = var_avars+var_cvars
-
-        vdata = data[var_vars]
-        if ((avar == aer+'_a?') and (nvar == 1)) or ((avar == aer) and (nvar == 1)):
-            vars1 = var_vars+[avar+'+'+cvar]
-            if (aer == 'so4') or (aer in gvars):
-                bname = 'Burden (TgS)'
-                srcname = 'Sources (TgS/yr)'
-                snkname = 'Sinks (TgS/yr)'
-                vdata = get_vertint(vdata,ha,p0,hb,ps,grav,factdd)
-            elif aer == 'num':
-                bname = 'Burden (#/mg-air)'
-                srcname = 'Sources (#/mg-air/yr)'
-                snkname = 'Sinks (#/mg-air/yr)'
-                vdata = get_vertint(vdata,ha,p0,hb,ps,grav,1)/sum_airmass
-            else:
-                bname = 'Burden (Tg)'
-                srcname = 'Sources (Tg/yr)'
-                snkname = 'Sinks (Tg/yr)'
-                vdata = get_vertint(vdata,ha,p0,hb,ps,grav,fact)
-        elif ((avar == aer+'_a?') and (nvar > 1)) or ((avar == aer) and (nvar > 1)):
-            if (aer == 'so4') or (aer in gvars):
-                #sfc conc
-                sname = 'Sfc Conc. (ug/m3)'
-                vdata = vdata[dict(lev=-1)].drop_vars('lev')
-                vdata = vdata*fact_kgpcm3_ugpm3
-            elif aer == 'num':
-                #sfc conc
-                sname = 'Sfc Conc. (#/cm3)'
-                vdata = vdata[dict(lev=-1)].drop_vars('lev')
-                vdata = vdata*1
-            else:
-                #sfc conc
-                sname = 'Sfc Conc. (ug/m3)'
-                vdata = vdata[dict(lev=-1)].drop_vars('lev')
-                vdata = vdata*fact_kgpcm3_ugpm3
-        else:
-            if ('_CLXF' in avar):
-                if (aer == 'bc') or (aer == 'pom'):
-                    vdata = vdata*factaaa*factbb
-                elif aer == 'num':
-                    vdata = vdata*factaa*factbb/sum_airmass
-                elif (aer == 'so4') or (aer in gvars):
-                    vdata = vdata*factaa*factcc
-                else:
-                    vdata = vdata*factaa
-            else:
-                if (aer == 'so4') or (aer in gvars):
-                    if ('ncol' in data.dims) and (len(vdata.dims) > 1):
-                        vdata = get_vertint(vdata,ha,p0,hb,ps,grav,factcc)
-                    elif len(vdata.dims) > 2:
-                        vdata = get_vertint(vdata,ha,p0,hb,ps,grav,factcc)
-                    else:
-                        vdata = vdata*factcc
-                elif aer == 'num':
-                    if ('ncol' in data.dims) and (len(vdata.dims) > 1):
-                        vdata = get_vertint(vdata,ha,p0,hb,ps,grav,factbb)/sum_airmass
-                    elif len(vdata.dims) > 2:
-                        vdata = get_vertint(vdata,ha,p0,hb,ps,grav,factbb)/sum_airmass
-                    else:
-                        vdata = vdata*factbb/sum_airmass
-                else:
-                    if ('ncol' in data.dims) and (len(vdata.dims) > 1):
-                        vdata = get_vertint(vdata,ha,p0,hb,ps,grav,factbb)
-                    elif len(vdata.dims) > 2:
-                        vdata = get_vertint(vdata,ha,p0,hb,ps,grav,factbb)
-                    else:
-                        vdata = vdata*factbb
-        ## getting total
-        prob_list=[]
-        for item in vars1[:-1]:
-            prob_list.append(avar.replace(aer+'_a?',item))
-        unavail_vars = list(set(prob_list)-set(var_vars+[avar+'+'+cvar]))
-        if var_vars!=[]:
-            vdata[avar+'+'+cvar] = vdata.to_array().sum('variable')
-        else:
-            vdata[avar+'+'+cvar] = np.nan
-        if unavail_vars!=[]:
-            vdata[unavail_vars] = [np.nan]*len(unavail_vars)
-
-        if land==True:
-            vdata = vdata.where(landF>0)
-        else:
-            vdata = vdata.where(landF>=0)
-    
-        if indl != None:
-            try:
-                mean = (vdata.sel(ncol=indl)).mean(dim=['ncol'])
-            except:
-                vdatalatlon = vdata.where((lon>=lon1) & (lon<=lon2))
-                vdatalatlon = vdatalatlon.where((lat>=lat1) & (lat<=lat2))
-                arealatlon = area.where((lon>=lon1) & (lon<=lon2))
-                arealatlon = arealatlon.where((lat>=lat1) & (lat<=lat2))
-                mean = (vdatalatlon*arealatlon).sum(arealatlon.dims)
-        elif ('WD_' in avar):
-            vdatalatlon = vdata.where((lon>=lon1) & (lon<=lon2))
-            vdatalatlon = vdatalatlon.where((lat>=lat1) & (lat<=lat2))
-            mean = (vdatalatlon).sum(arealatlon.dims)
-        else:
-            vdatalatlon = vdata.where((lon>=lon1) & (lon<=lon2))
-            vdatalatlon = vdatalatlon.where((lat>=lat1) & (lat<=lat2))
-            arealatlon = area.where((lon>=lon1) & (lon<=lon2))
-            arealatlon = arealatlon.where((lat>=lat1) & (lat<=lat2))
-            mean = (vdatalatlon*arealatlon).sum(arealatlon.dims)
-            
-        ## Renaming available variables
-        rvars = dict(zip(prob_list+[avar+'+'+cvar],vars1))
-        mean = mean.rename_vars(rvars)
-        
-        # Treat specific varaibles
-        if (('DDF' in avar) or ('GVF' in avar) or ('TBF' in avar) or ('DF_' in avar) or ('WD_' in avar)):
-            mean = -1*mean
-        
-        ### Treat SO2 separately: Based on discussions with Jianfeng Li (jianfeng.li@pnnl.gov)
-        if aer == 'SO2':
-            if 'WD_' in avar:
-                wdep_so2 = mean
-            elif '_CLXF' in avar:
-                elev_emis_so2 = mean
-            # GS_SO2 = SO2 emission (elevated) + WD_SO2 + Chemical reactions
-            elif 'GS_' in avar:
-                mean = mean + wdep_so2 - elev_emis_so2
-        
-        ## Appending to dataframe
-        ndf = mean.expand_dims(dim='vars').to_dataframe()
-        df = pd.concat([df,ndf.replace(0, np.nan)])
-        
-    if 'ncol' in data.dims:    
-        df['year'] = np.nan
-        df = df[['season','year']+vars1]
-    else:
-        df['time'] = np.nan
-        df = df[['time']+vars1]
-        
-    index_list = [bname,'Dry deposition','Wet deposition','surface emission',\
-             'elevated emission','condensation-aging','gravitational','turbulent',\
-             'incloud, stratiform','incloud, convective','belowcloud, strat.',\
-              'belowcloud, convec.','rain evap, strat.','rain evap, convec.',\
-             'renaming (sfgaex2)','coagulation (sfcoag1)','calcsize (sfcsiz3)',\
-             'calcsize (sfcsiz4)','dropmixnuc (mixnuc1)','cloudchem (AQH2SO4)',\
-             'cloudchem (AQSO4)','NPF (sfnnuc1)','Aq. chem (gas-species)','gas chem/wet dep. (gas-species)',sname]
-    df.index=index_list
-    listofSS = ['Dry deposition','Wet deposition','renaming (sfgaex2)',\
-                 'coagulation (sfcoag1)','calcsize (sfcsiz3)',\
-                 'calcsize (sfcsiz4)','dropmixnuc (mixnuc1)',\
-                 'condensation-aging','surface emission','elevated emission',\
-                 'cloudchem (AQH2SO4)','cloudchem (AQSO4)','NPF (sfnnuc1)',\
-                 'Aq. chem (gas-species)','gas chem/wet dep. (gas-species)']
-    if aer in gvars:
-        aer = 'total_'+aer
-        df.columns=df.columns.tolist()[:-1]+[aer]
-        srcsnk = df.loc[listofSS][vars1[:-1]+[aer]]
-    else:
-        df.columns=df.columns.tolist()[:-1]+[aer]
-        srcsnk = df.loc[listofSS[:-2]][vars1[:-1]+[aer]]
-    
-    ## Estimating sources and sinks
-    src = srcsnk.where(srcsnk>0).sum()
-    if 'SO2' in aer:
-        snk = df.loc['gas chem/wet dep. (gas-species)'] + df.loc['Dry deposition']
-    else:
-        snk = srcsnk.where(srcsnk<0).sum()
-    df.loc[srcname] = src
-    df.loc[snkname] = snk
-    lifetime = (df.loc[bname][vars1[:-1]+[aer]]/abs(df.loc[snkname][vars1[:-1]+[aer]]))*365
-    df.loc['Lifetime (days)'] = lifetime
-    if 'ncol' in data.dims:
-        df['season']=ts
-    else:
-        df['time']=ts
-    df = df.reindex([bname,sname,srcname,'surface emission','elevated emission',snkname,\
-               'Dry deposition','gravitational','turbulent','Wet deposition',\
-               'incloud, stratiform','incloud, convective','belowcloud, strat.',\
-               'belowcloud, convec.','rain evap, strat.','rain evap, convec.',\
-               'Lifetime (days)','renaming (sfgaex2)','coagulation (sfcoag1)','calcsize (sfcsiz3)',\
-                'calcsize (sfcsiz4)','dropmixnuc (mixnuc1)','cloudchem (AQH2SO4)',\
-                'cloudchem (AQSO4)','condensation-aging','NPF (sfnnuc1)','Aq. chem (gas-species)','gas chem/wet dep. (gas-species)'])
-    return df
-
-def get_budget_plot(data,path,var,ind,case1,case2,unit='(#/mg-air/yr)'):
-    data = data.reset_index()
-    data.columns = ['metric','cntl','test','diff','rel']
-    data = data.drop(index=[7,8,10,11,12,13,14,15,16,19,20,27]).reset_index(drop=True)
-    xx = ['Burden','Sfc Conc.','Total\nSource','Surface\nemission','Elevated\nemission','Total\nSink', \
-          'Dry\ndeposition', 'Wet\ndeposition','Renaming','Coagulation','Dropmix\nnuc',\
-          'Cloud\nchemistry\n(AQH2SO4)', 'Cloud\nchemistry\n(AQSO4)','Condensation','NPF',\
-          'Aquous\nchemistry\n(gas-species)']
-    data['metric'] = xx
-    ## Get sinks
-    data_sink = data[data['cntl']<0].sort_values(by='diff',ascending=False).reset_index(drop=True)
-    selrel = (data_sink['diff']/abs(data_sink['diff']).max())*100
-    data_sink = data_sink[abs(selrel)>=1].reset_index(drop=True)
-    data_sink['diff'] = np.sign(data_sink['cntl'])*data_sink['diff']
-    ## Get sources
-    data_source = data.drop(index=[0,1])[data['cntl']>0].sort_values(by='diff',ascending=True).reset_index(drop=True)
-    selrel = (data_source['diff']/abs(data_source['diff']).max())*100
-    data_source = data_source[abs(selrel)>=1].reset_index(drop=True)
-    data_source['diff'] = np.sign(data_source['cntl'])*data_source['diff']
-
-    ## Plot Figure
-    fig=plt.figure(figsize=[18,10])
-    gs = gridspec.GridSpec(1, 5,wspace=0.2)
-    ax1 = fig.add_subplot(gs[:, :4])
-    xx = data_source['metric'].tolist()+data_sink['metric'].tolist()
-    hh=0.2
-    ax1.bar(np.arange(0, len(data_source)), (data_source['diff']),color=pal[0],edgecolor='k',zorder=4,label='Sources')
-    ax1.bar(np.arange(len(data_source), len(data_source)+len(data_sink)), (data_sink['diff']),color=pal[1],edgecolor='k',zorder=4,label='Sinks')
-    ax1.set_xticks(np.arange(0, len(data_source)+len(data_sink)),xx)
-    ax1.grid(linestyle='--',color='#EBE7E0',zorder=4)
-    ax1.set_axisbelow(True)
-    plt.ylabel('$\Delta$('+var+')\n'+unit,fontsize=20)
-    plt.xlabel('')
-    plt.tick_params(labelsize=15)
-    plt.setp(ax1.spines.values(),lw=1.5)
-    ax1.tick_params(axis='x',which='both',bottom=False)
-    plt.axhline(0,c='k')
-    plt.legend(fontsize=15)
-
-    ## second axis
-    ax2 = fig.add_subplot(gs[:, 4:])
-    ax2.bar(0, data.iloc[0]['rel'],color=pal[2],width=0.5,edgecolor='k',zorder=4)
-    ax2.bar(1, data.iloc[1]['rel'],color=pal[2],width=0.5,edgecolor='k',zorder=4)
-    ax2.set_xticks([-0.5,0,1,1.5],['','Burden','Surface\nconc.',''])
-    ax2.grid(linestyle='--',color='#EBE7E0',zorder=4)
-    ax2.set_axisbelow(True)
-    plt.ylabel('Percent change (%)',fontsize=20)
-    ax2.yaxis.set_label_position("right")
-    ax2.yaxis.tick_right()
-    plt.xlabel('')
-    plt.tick_params(labelsize=15)
-    plt.setp(ax2.spines.values(),lw=1.5)
-    ax2.tick_params(axis='x',which='both',bottom=False)
-    plt.axhline(0,c='k')
-    
-    fig.suptitle(r'$\bf{Control\ Case:}$ '+case1+'\n'+\
-                 r'$\bf{Test\ Case:}$ '+case2+'\n'+r'$\bf{Plotting:}$ '+var,\
-                 fontsize=20,horizontalalignment='left',x=0.125,y=0.98)
-    ## Saving figure
-    ss = ['ANN','DJF','JJA']
-    plt.savefig(str(path)+'/'+var+'_Figure.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
-    plt.close()
-
-
-def get_all_tables(ind,aer,path1,path2,case1,case2,path,reg,loc,mod,land,splot):
-    ss = ['ANN','DJF','JJA']
-    cdatadef=get_tables(path1,case1,ss[ind],aer,reg=reg,loc=loc,mod=mod,land=land,splot=splot)
-    cdatase=get_tables(path2,case2,ss[ind],aer,reg=reg,loc=loc,mod=mod,land=land,splot=splot)
-    if 'year' in cdatadef.columns:
-        cdatadef = cdatadef.drop('year', axis=1)
-    if 'year' in cdatase.columns:
-        cdatase = cdatase.drop('year', axis=1)
-    cdatadiff = cdatase[cdatase.columns[1:]] - cdatadef[cdatase.columns[1:]]
-    cdatarel = (cdatadiff/abs(cdatadef[cdatase.columns[1:]]))*100
-    for col in cdatarel.columns:
-        df = pd.DataFrame()
-        df['<a target="_blank" href="{}">Control Case</a>'.format(col+'_'+case1+'_'+ss[ind]+'_latlon_splots.png')]=cdatadef[col]
-        df['<a target="_blank"  href="{}">Test Case</a>'.format(col+'_'+case2+'_'+ss[ind]+'_latlon_splots.png')]=cdatase[col]
-        df['<a target="_blank" href="{}">difference</a>'.format(col+'_diff_'+ss[ind]+'_latlon_splots.png')]=cdatadiff[col]
-        df['<a target="_blank" href="{}">rel diff (%)</a>'.format(col+'_rel_'+ss[ind]+'_latlon_splots.png')]=cdatarel[col]
-        if ind == 0:
-            if 'num' in aer:
-                gunit = '(#/mg-air/yr)'
-            else:
-                gunit = '(Tg/yr)'
-            get_budget_plot(df,path,col,ind,case1,case2,unit=gunit)
-        pd.options.display.float_format = '{:g}'.format
-        df = df.applymap(lambda x: rounding(x))
-        df = df.astype(str)
-        dfhtml = get_html_table(df)
-        htable = dfhtml.replace('<thead>','\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>CNTL:</strong>   '+case1+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>TEST:</strong>   '+case2+'</caption>\n<caption style = "font-family: Century Gothic, sans-serif;font-size: medium;text-align: left;padding: 5px;width: auto"><strong>VRBL:</strong>  '+col+'</caption>\n<thead>')
-        with open(path+'/'+col+'_'+ss[ind]+'.html','w') as f:
-            f.write(htable)
-    return cdatarel.columns
 
 def gather_data(path,aer,case,mod,plev=None,sv=None,fact=1,vertinit=None,unit=None,reg=None,land=None):
     ss = ['ANN','DJF','JJA']
@@ -669,27 +336,6 @@ def gather_ProfData(path,aer,case,mod,sv=None,lats=None,lons=None):
     pdata_combined=xr.concat(plist,"season")
         
     return data_combined,orig[1],pdata_combined
-
-def get_latlon(reg):
-    regions = {'CONUS':'24.74 49.34 -124.78 -66.95',\
-              'NA':'15 72 -167 -50',\
-              'EUS':'24.74 49.34 -97 -66.95',\
-              'ECN':'18 45 90 130',\
-              'IND':'6 40 66 98',\
-              'CAF':'-5 20 -18 50', \
-               'SH_pole':'-90 -60 -180 180',\
-              'SH_midlat':'-60 -30 -180 180',\
-              'Tropics':'-30 30 -180 180',\
-              'NH_midlat':'30 60 -180 180',\
-              'NH':'0 90 -180 180',\
-              'SH':'-90 0 -180 180',\
-              'NH_pole':'60 90 -180 180',\
-              'Global':'-90 90 -180 180'}
-    lat1 = float(regions[reg].split(' ')[0])
-    lat2 = float(regions[reg].split(' ')[1])
-    lon1 = float(regions[reg].split(' ')[2])
-    lon2 = float(regions[reg].split(' ')[3])
-    return lat1,lat2,lon1,lon2
 
 def forcing_plots(plot_vars,path,area,season,plane,lon1,lon2,lat1,lat2,scrip):
     titles=['TOA $\u0394$F : ALL','TOA $\u0394$F$_{SW}$ : ALL','TOA $\u0394$F$_{LW}$ : ALL',\
@@ -1020,6 +666,7 @@ def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,l
     var1 = var1.where((lat>=lat1) & (lat<=lat2))
     var1 = var1.stack(grid=var1.dims)
     var1 = var1.dropna("grid", how="all")
+    print(var1)
     dd2=data2.isel(season=ind)
     var2 = dd2.where((lon>=lon1) & (lon<=lon2))
     var2 = var2.where((lat>=lat1) & (lat<=lat2))
@@ -1077,6 +724,4 @@ def get_map(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,l
     ## Saving figure
     plt.savefig(str(path)+'/'+var+'_'+ss[ind]+'_latlon_'+pval+'.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
     plt.close()
-
-
 
