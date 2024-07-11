@@ -35,4 +35,4 @@ Acknowledgement
 * Jianfeng Li: [Aerosol optics diagnostics](https://github.com/eagles-project/aerosol_diag/tree/jianfeng_update)
 * Kai Zhang: [Aerosol forcing diagnostics](https://github.com/kaizhangpnl/e3sm_erf_aerosol)
 
-**Note:** Currently undegoing small patchworks and further developments
+**Note:** Currently undegoing small patchworks and further developments!
