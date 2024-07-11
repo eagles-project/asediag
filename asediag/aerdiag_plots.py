@@ -34,6 +34,8 @@ class get_plots(object):
         self.cbi = kwargs.get('cbi',1)
         self.verts = kwargs.get('verts',None)
         self.rr = kwargs.get('levels',None)
+        self.btm = kwargs.get('btm',0.06)
+        self.cbthk = kwargs.get('cbthk',0.02)
     
         
     def get_verts(self):
@@ -135,17 +137,6 @@ class get_plots(object):
         self.ax.grid( lw=0.5, color='#EBE7E0', alpha=0.5, linestyle='-.')
         ## Take care of the colorbar
         fig = self.ax.figure
-        ## rounding the colorbar ticks
-        s1 = pd.DataFrame(ranges)
-        s2 = s1.applymap(lambda x: rounding(x))[0].tolist()
-        cbar_ticks=list(map(str,s2))
-        cbar_ticks = [i.replace('.0','') if i[-2:]=='.0' else i for i in cbar_ticks]
-        cbar_ticks = [i.rstrip('0') if '.' in i else i for i in cbar_ticks]
-        if len(cbar_ticks) > 12:
-            cbar_ticks[::2]=['']*len(cbar_ticks[::2])
-        else:
-            cbar_ticks[0]=''
-            cbar_ticks[-1]=''
         ## Dynamic page size depending on the lat/lon ranges or panel size
         if self.figsize != None:
             positions = self.ax.get_position()
@@ -167,14 +158,28 @@ class get_plots(object):
 
         positions = self.ax.get_position()
         if self.colbar==True:
-            cax = fig.add_axes([positions.x0,positions.y0-0.06,positions.x1-positions.x0,0.02])
-            cbar = fig.colorbar(im,cax=cax,orientation='horizontal',ticks=ranges,extend='neither',fraction=0.08,drawedges=True)
-            cbar.ax.set_xticklabels(cbar_ticks, size=self.labelsize )
-            cbar.set_label(label=self.unit,size=self.labelsize)
-            cbar.outline.set_linewidth(1.5)
-            cbar.dividers.set_linewidth(1.5)
+            if ranges is not None and \
+            not all(v == 0 for v in ranges) and \
+            not any(np.isnan(v) for v in ranges) and \
+            not any(np.isinf(v) for v in ranges):
+
+                ## rounding the colorbar ticks
+                s1 = pd.DataFrame(ranges)
+                s2 = s1.applymap(lambda x: rounding(x))[0].tolist()
+                cbar_ticks=list(map(str,s2))
+                cbar_ticks = [i.replace('.0','') if i[-2:]=='.0' else i for i in cbar_ticks]
+                cbar_ticks = [i.rstrip('0') if '.' in i else i for i in cbar_ticks]
+                if len(cbar_ticks) > 12:
+                    cbar_ticks[::2]=['']*len(cbar_ticks[::2])
+                else:
+                    cbar_ticks[0]=''
+                    cbar_ticks[-1]=''
+                cax = fig.add_axes([positions.x0,positions.y0-self.btm,positions.x1-positions.x0,self.cbthk])
+                cbar = fig.colorbar(im,cax=cax,orientation='horizontal',ticks=ranges,extend='neither',fraction=0.08,drawedges=True)
+                cbar.ax.set_xticklabels(cbar_ticks, size=self.labelsize )
+                cbar.set_label(label=self.unit,size=self.labelsize)
+                cbar.outline.set_linewidth(1.5)
+                cbar.dividers.set_linewidth(1.5)
         ## panel box thickness
         plt.setp(self.ax.spines.values(),lw=1.5)
         return im
-
-        
