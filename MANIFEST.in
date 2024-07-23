@@ -1,0 +1,10 @@
+include AUTHORS.rst
+include LICENSE
+include requirements.in
+include batch_config.ini
+include README.md
+
+recursive-include test *
+global-exclude __pycache__
+global-exclude *.py[cod]
+

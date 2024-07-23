@@ -1,9 +1,14 @@
-## Aerosol SE DIAGnostics (asediag)
+## Aerosol Diagnostics on Model Native Grid
 
 **Aerosol process analysis in model-native Spectral Element (SE) grid**
 
-* **Contact:** [taufiq.hassan@pnnl.gov](taufiq.hassan@pnnl.gov) 
-* [Contributors](./AUTHORS.rst)
+Aerosol Diagnostics on Model Native Grid is a Python-based standalone tool designed for aerosol process analysis within the model-native spectral element (SE) grid. As such, it is also known as Aerosol SE Diagnostics or “asediag”. It includes functionalities for aerosol budget analysis, optical diagnostics, and decomposed anthropogenic aerosol radiative forcing analysis. The tool supports both SE and regular latitude-longitude (RLL) grids, and can operate in batch mode with multiprocessing capabilities.
+
+**Primary Developer & Maintainer:** Taufiq Hassan
+
+**For Questions:** [taufiq.hassan@pnnl.gov](taufiq.hassan@pnnl.gov)
+
+[**Contributors**](./AUTHORS.rst)
 
 Installation
 ------------

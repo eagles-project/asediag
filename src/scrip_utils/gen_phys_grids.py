@@ -3,8 +3,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from asediag.gen_exodus import gen_exodus
-from asediag.asediag_utils import get_dir_path, group_duplicate_index
+from src.scrip_utils.gen_exodus import gen_exodus
+from src.utils.asediag_utils import get_dir_path, group_duplicate_index
 
 class gen_pg(object):
     """

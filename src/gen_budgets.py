@@ -6,10 +6,11 @@ import matplotlib.pyplot as plt
 import cartopy.crs as crs
 import matplotlib.gridspec as gridspec
 
-from asediag.aer_budget_analysis import AerosolBudgetCalculator
-from asediag.asediag_utils import rounding, get_html_table
-from asediag.nclCols import amwg256_map, BlueWhiteOrangeRed_map
-from asediag.aerdiag_plots import get_plots
+from src.aer_budget_analysis import AerosolBudgetCalculator
+from src.utils.asediag_utils import rounding, rearrange_variables
+from src.utils.html_utils import get_html_table
+from src.utils.nclCols import amwg256_map, BlueWhiteOrangeRed_map
+from src.utils.aerdiag_plots import get_plots
 
 class GenAerosolBudgets:
     def __init__(self, ind, aer, path1, path2, case1, case2, path, reg, loc, mod, land, splot):
@@ -46,7 +47,8 @@ class GenAerosolBudgets:
         data_sink = data_sink[abs(selrel_sink) >= 1].reset_index(drop=True)
         data_sink['diff'] = np.sign(data_sink['cntl']) * data_sink['diff']
         
-        data_source = data.drop(index=[0, 1])[data['cntl'] > 0].sort_values(by='diff', ascending=True).reset_index(drop=True)
+        data_dropped = data.drop(index=[0, 1])
+        data_source = data_dropped.loc[data['cntl'] > 0].sort_values(by='diff', ascending=True).reset_index(drop=True)
         selrel_source = (data_source['diff'] / abs(data_source['diff']).max()) * 100
         data_source = data_source[abs(selrel_source) >= 1].reset_index(drop=True)
         data_source['diff'] = np.sign(data_source['cntl']) * data_source['diff']
@@ -98,7 +100,7 @@ class GenAerosolBudgets:
         plt.savefig(f'{self.path}/{var}_Figure.png', format='png', dpi=300, bbox_inches='tight', pad_inches=0.1)
         plt.close()
 
-    def generate_html_tables(self):
+    def generate_html_tables(self, return_dict = None):
         cdatadef = AerosolBudgetCalculator(self.path1, self.case1, self.ss[self.ind], self.aer, reg=self.reg, loc=self.loc, mod=self.mod, land=self.land, splots=self.splot).get_tables()
         cdatase = AerosolBudgetCalculator(self.path2, self.case2, self.ss[self.ind], self.aer, reg=self.reg, loc=self.loc, mod=self.mod, land=self.land, splots=self.splot).get_tables()
 
@@ -106,6 +108,18 @@ class GenAerosolBudgets:
             cdatadef = cdatadef.drop('year', axis=1)
         if 'year' in cdatase.columns:
             cdatase = cdatase.drop('year', axis=1)
+        
+        # For mode agnostic dataframes
+        for col in cdatadef.columns:
+            if col not in cdatase.columns:
+                cdatase[col] = np.nan
+
+        for col in cdatase.columns:
+            if col not in cdatadef.columns:
+                cdatadef[col] = np.nan
+        
+        # Reorder columns to match
+        cdatadef = cdatadef[cdatase.columns]
 
         cdatadiff = cdatase[cdatase.columns[1:]] - cdatadef[cdatase.columns[1:]]
         cdatarel = (cdatadiff / abs(cdatadef[cdatase.columns[1:]])) * 100
@@ -123,7 +137,7 @@ class GenAerosolBudgets:
                 self.gen_budget_barPlots(df, col, unit=unit)
 
             pd.options.display.float_format = '{:g}'.format
-            df = df.applymap(rounding).astype(str)
+            df = df.map(rounding).astype(str)
             dfhtml = get_html_table(df)
             htable = dfhtml.replace(
                 '<thead>',
@@ -134,7 +148,9 @@ class GenAerosolBudgets:
 
             with open(f'{self.path}/{col}_{self.ss[self.ind]}.html', 'w') as f:
                 f.write(htable)
-
+        rvars = rearrange_variables(list(cdatarel.columns))
+        if return_dict != None:
+            return_dict[self.aer] = rvars
         return cdatarel.columns
     
     def get_budget_SpData(self):

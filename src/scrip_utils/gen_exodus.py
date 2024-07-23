@@ -2,7 +2,7 @@ import numpy as np
 import xarray as xr
 import logging
 
-from asediag.asediag_utils import get_dir_path
+from src.utils.asediag_utils import get_dir_path
 
 
 class gen_exodus(object):

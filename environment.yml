@@ -1,0 +1,13 @@
+name: asdenv
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - cartopy
+  - matplotlib
+  - netcdf4
+  - h5netcdf
+  - xarray
+  - dask
+  - numpy
+  - pandas

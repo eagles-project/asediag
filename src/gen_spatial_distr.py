@@ -5,9 +5,9 @@ import xarray as xr
 import numpy as np
 from pathlib import Path
 
-from asediag.asediag_utils import rounding, get_latlon, gen_colbar_range, get_vertint
-from asediag.nclCols import amwg256_map, BlueWhiteOrangeRed_map
-from asediag.aerdiag_plots import get_plots
+from src.utils.asediag_utils import rounding, get_latlon, gen_colbar_range, get_vertint
+from src.utils.nclCols import amwg256_map, BlueWhiteOrangeRed_map
+from src.utils.aerdiag_plots import get_plots
 
 
 class GenSpatialData:
@@ -132,7 +132,7 @@ class GenSpatialData:
         
         ## getting total
         vdata[self.aer] = vdata.to_array().sum('variable')
-        ## actual area weighted sums
+        ## actual area weighted means
         vdatalatlon = vdata.where((self.lon>=self.lon1) & (self.lon<=self.lon2) & (self.lat>=self.lat1) & (self.lat<=self.lat2))
         arealatlon = self.area.where((self.lon>=self.lon1) & (self.lon<=self.lon2) & (self.lat>=self.lat1) & (self.lat<=self.lat2))
         mean = (vdatalatlon*arealatlon).sum(vdatalatlon.dims)/(arealatlon).sum(arealatlon.dims)
@@ -155,19 +155,25 @@ class GenSpatialData:
         
         self.factors["fact"] = 1.0
         self.pval = 'radiation'
-        vdata = self.data[self.aer]
+
+        vlist = list(self.data.variables.keys())
+        vars_list = [item for item in self.aer if item in vlist]
+        NAvars = set(self.aer) - set(vars_list)
+        if NAvars:
+            print('\nThe following variables with vertical dimension are unavailable:\n',NAvars,'\n')
+        vdata = self.data[vars_list]
 
         if ('ncol' in self.data.dims) and (len(vdata.dims) > 1):
             vdata = get_vertint(vdata,self.ha,self.p0,self.hb,self.ps,self.grav,self.factors["fact"])
         else:
             vdata = vdata * self.factors["fact"]
 
-        ## actual area weighted sums
+        ## actual area weighted means
         vdatalatlon = vdata.where((self.lon>=self.lon1) & (self.lon<=self.lon2) & (self.lat>=self.lat1) & (self.lat<=self.lat2))
         arealatlon = self.area.where((self.lon>=self.lon1) & (self.lon<=self.lon2) & (self.lat>=self.lat1) & (self.lat<=self.lat2))
         mean = (vdatalatlon*arealatlon).sum(vdatalatlon.dims)/(arealatlon).sum(arealatlon.dims)
         
-        return vdata, mean, self.aer
+        return vdata, mean, vars_list
 
     def gather_data(self):
         dlist = []
@@ -190,83 +196,94 @@ class GenSpatialData:
                 self.unit = "[# $m^{-3}$]" if self.aer == 'num' else "[ug $m^{-3}$]"
 
         return data_combined, m_combined, var_vars, self.pval, self.unit, self.lon, self.lat
- 
-def gen_4panel_maps(data1,data2,diff,rel,var,ind,case1,case2,mean1,mean2,pval,unit,lon,lat,scrip=None,reg='Global',path=None,grid=True):
-    if reg!=None:
-        lat1,lat2,lon1,lon2=get_latlon(reg)
-    else:
-        lat1,lat2,lon1,lon2=lat.min(),lat.max(),lon.min(),lon.max()
-    if path==None:
-        path = Path('.').absolute()
-    if (reg == 'Global') or (reg == None):
-        grid = False 
 
-    dd1=data1.isel(season=ind)
-    var1 = dd1.where((lon>=lon1) & (lon<=lon2))
-    var1 = var1.where((lat>=lat1) & (lat<=lat2))
-    var1 = var1.stack(grid=var1.dims)
-    var1 = var1.dropna("grid", how="all")
 
-    dd2=data2.isel(season=ind)
-    var2 = dd2.where((lon>=lon1) & (lon<=lon2))
-    var2 = var2.where((lat>=lat1) & (lat<=lat2))
-    var2 = var2.stack(grid=var2.dims)
-    var2 = var2.dropna("grid", how="all")
+class SpatialMapGenerator:
+    def __init__(self, data1, data2, diff, rel, var, case1, case2, mean1, mean2, pval, unit, lon, lat, scrip=None, reg='Global', path=None, grid=True):
+        self.data1 = data1
+        self.data2 = data2
+        self.diff = diff
+        self.rel = rel
+        self.var = var
+        self.case1 = case1
+        self.case2 = case2
+        self.mean1 = mean1
+        self.mean2 = mean2
+        self.pval = pval
+        self.unit = unit
+        self.lon = lon
+        self.lat = lat
+        self.scrip = scrip
+        self.reg = reg
+        self.path = path if path is not None else Path('.').absolute()
+        self.grid = grid
+        self.lat1, self.lat2, self.lon1, self.lon2 = self.get_region_bounds()
 
-    rr=gen_colbar_range(v1=var1,v2=var2).hmap()
-
-    ee=diff.isel(season=ind)
-    eevar = ee.where((lon>=lon1) & (lon<=lon2))
-    eevar = eevar.where((lat>=lat1) & (lat<=lat2))
-    eevar = eevar.stack(grid=eevar.dims)
-    eevar = eevar.dropna("grid", how="all")
-
-    ff=rel.isel(season=ind)
-
-    rr_diff=gen_colbar_range(diff=eevar).hdiff()
-    rr_rel=[-100,-70,-50,-20,-10,-5,-2,2,5,10,20,50,70,100]
-
-    m1 = mean1.isel(season=ind).values
-    m2 = mean2.isel(season=ind).values
-    m3 = m2-m1
-    m4 = (m3/abs(m1))*100
-
-    ss = ['ANN','DJF','JJA']
-    titles = ['Control Case','Test Case','Test Case'+' $-$ '+'Control Case','Relative diff (%)']
-    means = [m1,m2,m3,m4]
-    colBars = [rr,rr,rr_diff,rr_rel]
-    colMaps = [amwg256_map,amwg256_map,BlueWhiteOrangeRed_map,BlueWhiteOrangeRed_map]
-    units = [unit,unit,unit,'[%]']
-    varbls = [dd1,dd2,ee,ff]
-
-    fig = plt.figure(figsize=(18,12))
-
-    for i,t,m,colr,u,cm,vals in zip([1,2,3,4],titles,means,colBars,units,colMaps,varbls):
-        panel=plt.subplot(220+i,projection=crs.PlateCarree())
-        if i<3:
-            cbs=5
-            cbe=-20
-            cbi=2
+    def get_region_bounds(self):
+        """Get latitude and longitude bounds for the region."""
+        if self.reg is not None:
+            return get_latlon(self.reg)
         else:
-            cbs=0
-            cbe=-1
-            cbi=5
-        try:
-            get_plots( vals,ax=panel,cmap=cm,levels=colr,\
-                         scrip_file=scrip,figsize=fig,gridLines=grid,\
-                            lon_range=[lon1,lon2], lat_range=[lat1,lat2],
+            return self.lat.min(), self.lat.max(), self.lon.min(), self.lon.max()
+
+    def process_data(self, data, ind):
+        """Process data by selecting region and stacking grid."""
+        dd = data.isel(season=ind)
+        var = dd.where((self.lon >= self.lon1) & (self.lon <= self.lon2))
+        var = var.where((self.lat >= self.lat1) & (self.lat <= self.lat2))
+        var = var.stack(grid=var.dims)
+        return dd, var.dropna("grid", how="all")
+
+    def generate_colbar_ranges(self, var1, var2):
+        """Generate color bar ranges for the given data."""
+        return gen_colbar_range(v1=var1, v2=var2).hmap()
+
+    def generate_4panel_maps(self, ind):
+        """Generate 4-panel maps."""
+        dd1, var1 = self.process_data(self.data1, ind)
+        dd2, var2 = self.process_data(self.data2, ind)
+        colbar_range = self.generate_colbar_ranges(var1, var2)
+
+        ee, eevar = self.process_data(self.diff, ind)
+        ff=self.rel.isel(season=ind)
+
+        rel_diff_colbar = gen_colbar_range(diff=eevar).hdiff()
+        rel_colbar = [-100, -70, -50, -20, -10, -5, -2, 2, 5, 10, 20, 50, 70, 100]
+
+        m1 = self.mean1.isel(season=ind).values
+        m2 = self.mean2.isel(season=ind).values
+        m3 = m2 - m1
+        m4 = (m3 / abs(m1)) * 100
+
+        seasons = ['ANN', 'DJF', 'JJA']
+        titles = ['Control Case', 'Test Case', 'Test Case $-$ Control Case', 'Relative diff (%)']
+        means = [m1, m2, m3, m4]
+        colBars = [colbar_range, colbar_range, rel_diff_colbar, rel_colbar]
+        colMaps = [amwg256_map, amwg256_map, BlueWhiteOrangeRed_map, BlueWhiteOrangeRed_map]
+        units = [self.unit, self.unit, self.unit, '[%]']
+        varbls = [dd1, dd2, ee, ff]
+
+        fig = plt.figure(figsize=(18, 12))
+
+        for i, (title, mean, colr, u, cm, vals) in enumerate(zip(titles, means, colBars, units, colMaps, varbls), start=1):
+            panel = plt.subplot(220 + i, projection=crs.PlateCarree())
+            cbs, cbe, cbi = (5, -20, 2) if i < 3 else (0, -1, 5)
+
+            try:
+                get_plots( vals,ax=panel,cmap=cm,levels=colr,\
+                            scrip_file=self.scrip,figsize=fig,gridLines=self.grid,\
+                            lon_range=[self.lon1,self.lon2], lat_range=[self.lat1,self.lat2],
                             unit=u,cbs=cbs,cbe=cbe,cbi=cbi).get_map()
-        except:
-            get_plots( vals,ax=panel,cmap=cm,levels=colr,\
-                         scrip_file='',figsize=fig,gridLines=grid,\
-                            lon_range=[lon1,lon2], lat_range=[lat1,lat2],
+            except:
+                get_plots( vals,ax=panel,cmap=cm,levels=colr,\
+                            scrip_file='',figsize=fig,gridLines=self.grid,\
+                            lon_range=[self.lon1,self.lon2], lat_range=[self.lat1,self.lat2],
                             unit=u,cbs=cbs,cbe=cbe,cbi=cbi).get_map()
-        panel.text(0.005,1.03,t,size=15,transform=panel.transAxes)
-        panel.text(0.8,1.03, 'mean: '+str(rounding(m)),size=15,transform=panel.transAxes)
-    
-    fig.suptitle(r'$\bf{CNTL:}$ '+case1+'\n'+\
-                 r'$\bf{TEST:}$ '+case2+'\n'+r'$\bf{VRBL:}$ '+var,\
-                 fontsize=20,horizontalalignment='left',x=0.125,y=0.96)
-    ## Saving figure
-    plt.savefig(str(path)+'/'+var+'_'+ss[ind]+'_latlon_'+pval+'.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
-    plt.close()
+            panel.text(0.005, 1.03, title, size=15, transform=panel.transAxes)
+            panel.text(0.8,1.03, 'mean: '+str(rounding(mean)),size=15,transform=panel.transAxes)
+
+        fig.suptitle(r'$\bf{CNTL:}$ ' + self.case1 + '\n' + r'$\bf{TEST:}$ ' + self.case2 + '\n' + r'$\bf{VRBL:}$ ' + self.var,
+                     fontsize=20, horizontalalignment='left', x=0.125, y=0.96)
+        ## Saving figure
+        plt.savefig(str(self.path)+'/'+self.var+'_'+seasons[ind]+'_latlon_'+self.pval+'.png',format='png',dpi=300,bbox_inches='tight',pad_inches=0.1)
+        plt.close()

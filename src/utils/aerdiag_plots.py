@@ -8,10 +8,19 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from matplotlib.collections import PolyCollection
 from matplotlib.colors import ListedColormap
 import pandas as pd
-from asediag.asediag_utils import rounding, gen_colbar_range
-from asediag.gen_scrip_file import gen_scrip
+
+from src.utils.asediag_utils import rounding, gen_colbar_range
+# Optional import
+try:
+    from src.scrip_utils.gen_scrip_file import gen_scrip
+except ImportError:
+    pass
     
 class get_plots(object):
+    """
+    A class to generate and configure spatial 2D maps using cartopy and matplotlib.
+    This should work for both regular lat-lon and spectral element grids.
+    """
     
     def __init__(self,var,ax,**kwargs):
         self.var = var
@@ -39,6 +48,10 @@ class get_plots(object):
     
         
     def get_verts(self):
+        """
+        Retrieve vertices for plotting from scrip file or process scrip metadata.
+        This step is essential for plotting in spectral element grid.
+        """
         try:
             corner_lon,corner_lat,center_lon,center_lat = gen_scrip(res=self.scrip_file).get_scrip_file()
         except:
@@ -78,6 +91,9 @@ class get_plots(object):
         return self.var, verts
         
     def get_map(self):
+        """
+        Generate and display the map plot.
+        """
         kwd_polycollection = {}
         kwd_pcolormesh = {}
         if self.gridLines == True:
@@ -165,7 +181,7 @@ class get_plots(object):
 
                 ## rounding the colorbar ticks
                 s1 = pd.DataFrame(ranges)
-                s2 = s1.applymap(lambda x: rounding(x))[0].tolist()
+                s2 = s1.map(lambda x: rounding(x))[0].tolist()
                 cbar_ticks=list(map(str,s2))
                 cbar_ticks = [i.replace('.0','') if i[-2:]=='.0' else i for i in cbar_ticks]
                 cbar_ticks = [i.rstrip('0') if '.' in i else i for i in cbar_ticks]
