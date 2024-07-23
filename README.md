@@ -2,7 +2,7 @@
 
 **Aerosol process analysis in model-native Spectral Element (SE) grid**
 
-Aerosol Diagnostics on Model Native Grid is a Python-based standalone tool designed for aerosol process analysis within the model-native spectral element (SE) grid. As such, it is also known as Aerosol SE Diagnostics or “asediag”. It includes functionalities for aerosol budget analysis, optical diagnostics, and decomposed anthropogenic aerosol radiative forcing analysis. The tool supports both SE and regular latitude-longitude (RLL) grids, and can operate in batch mode with multiprocessing capabilities.
+Aerosol Diagnostics on Model Native Grid is a Python-based tool designed for diagnosing aerosol processes in E3SM. It is particularly designed to analyze simulation data on the model-native spectral element (SE) grid, so it is also known as Aerosol SE Diagnostics or “asediag”. It includes functionalities for aerosol budget analysis, optical property diagnostics, and decomposed anthropogenic aerosol radiative forcing analysis. Data analysis on the native grid enhances the efficiency and scalability for high-resolution applications. On the other hand, asediag also supports analysis on the regular latitude-longitude (RLL) grid, so the modelers can flexibly choose the data to analyze. It operates in batch mode with multiprocessing capabilities, allowing rapid processing of large datasets. 
 
 **Primary Developer & Maintainer:** Taufiq Hassan
 
@@ -30,7 +30,7 @@ python submit_asediag_batches.py
 ```
 ### Example 
 
-[Demo output page](https://compy-dtn.pnl.gov/hass877/share/aer_diag/F20TR_2016Emis_ne30pg2_def_minus_F20TR_1850Emis_ne30pg2_def/aerosol.html)
+[Demo output page](https://compy-dtn.pnl.gov/hass877/share/aer_diag/F20TR_2016Emis_ne30pg2_def_minus_F20TR_1850Emis_ne30pg2_def_Global/aerosol.html)
 
 Acknowledgement
 ---------------
@@ -40,4 +40,4 @@ Acknowledgement
 * Jianfeng Li: [Aerosol optics diagnostics](https://github.com/eagles-project/aerosol_diag/tree/jianfeng_update)
 * Kai Zhang: [Aerosol forcing diagnostics](https://github.com/kaizhangpnl/e3sm_erf_aerosol)
 
-**Note:** Currently undegoing small patchworks and further developments!
+**Note:** Constantly undegoing small patchworks and further developments.
