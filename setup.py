@@ -1,59 +1,44 @@
-"""A setuptools based setup module for asediag"""
-# -*- coding: utf-8 -*-
-
-from codecs import open
-from os import path
 from setuptools import setup, find_packages
 
-here = path.abspath(path.dirname(__file__))
-
-with open(path.join(here, 'README.rst'), encoding='utf-8') as readme_file:
-    readme = readme_file.read()
-
-requirements = [
-    'pandas',
-    'scipy',
-    'setuptools',
-    'netCDF4',
-    'dask[complete]',
-    'xarray',
-    'cartopy==0.19.0.post1',
-    'matplotlib',
-    'pytest',
-]
-
-test_requirements = [
-    'pytest',
-]
+with open("README.md", "r") as fh:
+    long_description = fh.read()
 
 setup(
-    name='asediag',
-    version='2.1.1',
-    description="Aerosol SE-data diagnostics tool",
-    long_description=readme,
+    name="asediag",
+    version="1.2.0",
     author="Taufiq Hassan",
-    author_email='taufiq.hassan@pnnl.gov',
-    url='https://github.com/TaufiqHassan/asediag',
-    packages=find_packages(exclude=['docs', 'tests']),
-    package_data = {
-            'template':['*'],
-            },
-    entry_points={
-        'console_scripts':[
-            'asediag=asediag.aer_diag_cli:main',
-            ],
-        },
-    include_package_data=True,
-    install_requires=requirements,
-    license="MIT",
+    author_email="taufiq.hassan@pnnl.gov",
+    description="Aerosol Diagnostics on Model Native Grid",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://github.com/eagles-project/asediag",
+    packages=find_packages(),
     classifiers=[
-        'License :: OSI Approved :: MIT License',
-        'Natural Language :: English',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
     ],
-    test_suite='tests',
-    tests_require=test_requirements,
+    python_requires='>=3.9',
+    install_requires=[
+        "cartopy",
+        "matplotlib",
+        "numpy",
+        "pandas",
+        "setuptools",
+        "netcdf4",
+        "h5netcdf",
+        "xarray",
+        "six",
+        "dask",
+    ],
+    test_suite='test',
+    tests_require=[
+        'pytest',
+    ],
+    include_package_data=True,
+    entry_points={
+        'console_scripts': [
+            'asediag=src.aer_diag_cli:main',
+        ],
+    },
 )

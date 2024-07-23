@@ -1,13 +1,17 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+*/__pycache__
 *.py[cod]
 *$py.class
+*.pyc
+.DS_Store
 
 # C extensions
 *.so
 
 # Distribution / packaging
 .Python
+testMaker.py
 env/
 build/
 develop-eggs/
@@ -22,6 +26,7 @@ parts/
 sdist/
 var/
 venv/
+*/.DS_Store
 *.egg-info/
 .installed.cfg
 *.egg
@@ -31,6 +36,7 @@ venv/
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+*.ipynb
 
 # Installer logs
 pip-log.txt

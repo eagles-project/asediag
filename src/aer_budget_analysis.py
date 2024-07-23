@@ -4,7 +4,7 @@ import numpy as np
 import fnmatch
 import re
 
-from asediag.asediag_utils import get_local, get_nearestlatlon, get_vertint, get_latlon
+from src.utils.asediag_utils import get_local, get_nearestlatlon, get_vertint, get_latlon
 
 class AerosolBudgetCalculator:
     def __init__(self, path, case, ts, aer, **kwargs):
@@ -14,23 +14,17 @@ class AerosolBudgetCalculator:
         self.aer = aer
         self.mod = kwargs.get('mod', 'eam')
         
-        # Load data
-        self.data, self.lon = self.open_data()
-        self.lat = self.data['lat']
-        
         # Constants and factors
         self.avgod = 6.022e+23
         self.mwso4 = 115.0
-        self.factors = self.calculate_factors()
-        self.ps = self.data['PS']
-        self.ha = self.data['hyai']
-        self.hb = self.data['hybi']
-        self.p0 = self.data['P0']
-        self.area = self.data['area'] * (6.37122e6) ** 2
-        self.landF = self.data['LANDFRAC']
-        self.grav = self.factors["grav"]
+        self.grav = 9.806
         
         # Optional parameters
+        self.data = kwargs.get('data', None)
+        self.lon = kwargs.get('lon', None)
+        self.lat = kwargs.get('lat', None)
+        self.area = kwargs.get('area', None)
+        self.factors = kwargs.get('factors', None)
         self.reg = kwargs.get('reg', None)
         self.loc = kwargs.get('loc', None)
         self.indl = kwargs.get('indl', None)
@@ -52,11 +46,11 @@ class AerosolBudgetCalculator:
                         '1': 'accum',
                         '2': 'aitken',
                         '3': 'coarse',
-                        '4': 'pcarbon'
+                        '4': 'pcarbon',
+                        '5': 'mode5',
+                        '6': 'mode6',
+                        '7': 'mode7'
                         }
-
-        # Sum of airmass for normalization
-        self.sum_airmass = ((self.ps * self.area).sum() / self.grav) * 1e6
 
     def open_data(self):
         """Open and load dataset files."""
@@ -103,6 +97,18 @@ class AerosolBudgetCalculator:
         factors["fact_kgpcm3_ugpm3"] = factors["fact_kgpkg_kgpcm3"] * 1e15
         return factors
 
+    def get_data_params(self):
+        # other data specific parameters
+        self.ps = self.data['PS']
+        self.ha = self.data['hyai']
+        self.hb = self.data['hybi']
+        self.p0 = self.data['P0']
+        self.area = self.data['area'] * (6.37122e6) ** 2
+        self.landF = self.data['LANDFRAC']
+        # Sum of airmass for normalization
+        self.sum_airmass = ((self.ps * self.area).sum() / self.grav) * 1e6
+
+
     def set_region(self):
         """Set the region for analysis."""
         if self.reg is not None:
@@ -140,26 +146,41 @@ class AerosolBudgetCalculator:
                 self.bname = 'Burden (TgS)'
                 self.srcname = 'Sources (TgS/yr)'
                 self.snkname = 'Sinks (TgS/yr)'
-                vdata = get_vertint(vdata, self.ha, self.p0, self.hb, self.ps, self.grav, self.factors['factdd'])
+                try:
+                    vdata = get_vertint(vdata, self.ha, self.p0, self.hb, self.ps, self.grav, self.factors['factdd'])
+                except:
+                    pass
             elif self.aer == 'num':
                 self.bname = 'Burden (#/mg-air)'
                 self.srcname = 'Sources (#/mg-air/yr)'
                 self.snkname = 'Sinks (#/mg-air/yr)'
-                vdata = get_vertint(vdata, self.ha, self.p0, self.hb, self.ps, self.grav, 1) / self.sum_airmass
+                try:
+                    vdata = get_vertint(vdata, self.ha, self.p0, self.hb, self.ps, self.grav, 1) / self.sum_airmass
+                except:
+                    pass
             else:
                 self.bname = 'Burden (Tg)'
                 self.srcname = 'Sources (Tg/yr)'
                 self.snkname = 'Sinks (Tg/yr)'
-                vdata = get_vertint(vdata, self.ha, self.p0, self.hb, self.ps, self.grav, self.factors['fact'])
+                try:
+                    vdata = get_vertint(vdata, self.ha, self.p0, self.hb, self.ps, self.grav, self.factors['fact'])
+                except:
+                    pass
         elif ((avar == self.aer+'_a?') and (nvar > 1)) or ((avar == self.aer) and (nvar > 1)):
             if self.aer == 'num':
                 self.sname = 'Sfc Conc. (#/cm3)'
-                vdata = vdata[dict(lev=-1)].drop_vars('lev')
-                vdata = vdata*1
+                try:
+                    vdata = vdata[dict(lev=-1)].drop_vars('lev')
+                    vdata = vdata*1
+                except:
+                    pass
             else:
                 self.sname = 'Sfc Conc. (ug/m3)'
-                vdata = vdata[dict(lev=-1)].drop_vars('lev')
-                vdata = vdata*self.factors['fact_kgpcm3_ugpm3']
+                try:
+                    vdata = vdata[dict(lev=-1)].drop_vars('lev')
+                    vdata = vdata*self.factors['fact_kgpcm3_ugpm3']
+                except:
+                    pass
         else:
             vdata = self.adjust_vdata_others(vdata, avar, cvar, nvar)
         return vdata
@@ -286,6 +307,8 @@ class AerosolBudgetCalculator:
             var_cvars = fnmatch.filter(self.data.variables.keys(), cvar)
             var_vars = var_avars + var_cvars
             vdata = self.data[var_vars]
+            if var_vars == []:
+                vdata[avar.replace('?','1')] = np.nan
             vdata = self.adjust_vdata(vdata, avar, cvar, nvar, var_vars)
             vdata, prob_list = self.calculate_totals(vdata, avar, cvar, var_vars)
             nvdata.append(vdata)
@@ -361,6 +384,12 @@ class AerosolBudgetCalculator:
         
     def get_tables(self):
         """Generate and return the aerosol budget tables."""
+        if self.data == None:
+            self.data, self.lon = self.open_data()
+            self.lat = self.data['lat']
+        self.get_data_params()
+        self.factors = self.calculate_factors()
+
         self.set_region()
         avariables, cvariables = self.get_var_lists()
         df, nvdata = self.process_data(avariables, cvariables)
@@ -372,7 +401,7 @@ class AerosolBudgetCalculator:
         aerosol_groups = {amode: [] for amode in self.MAM_modes.values()}
 
         # Find Pairs for each mode
-        pattern = re.compile(f"{self.aer}_[ac](\d)")
+        pattern = re.compile(rf"{self.aer}_[ac](\d)")
         for col in df.columns:
             match = pattern.match(col)
             if match:

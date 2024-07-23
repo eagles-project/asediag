@@ -1,11 +1,18 @@
+======================
+Authors and Contributors
+======================
 
-**Maintainer**
+This project exists thanks to all the people who contribute. We appreciate your help!
 
-* Taufiq Hassan Mozumder <taufiq.hassan@pnnl.gov>
+Project Lead & Primary Developer
+---------------------------------
 
-**Contributors**
+- Taufiq Hassan <taufiq.hassan@pnnl.gov>
 
-* Po-Lun Ma
-* Kai Zhang
-* Jianfeng Li
-* Jian Sun
+Contributors
+------------
+
+- Po-Lun Ma
+- Kai Zhang
+- Jianfeng Li
+- Jian Sun

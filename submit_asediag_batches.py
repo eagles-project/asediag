@@ -7,7 +7,8 @@ import shutil
 import logging
 import importlib.resources as pkg_resources
 from six.moves import configparser
-from asediag.asediag_utils import exec_shell, setup_output_directory
+
+from src.utils.asediag_utils import exec_shell, setup_output_directory
 
 # Configure logging to log messages to a file
 log_file = 'log.asediag'
@@ -50,7 +51,7 @@ case2 = case2 or inDirectory2.strip().split('/')[-3]
 
 # Setting output path and copying template frontend html
 path = setup_output_directory(outDirectory, case1, case2, region)
-package_name = 'asediag'
+package_name = 'src.utils'
 with pkg_resources.open_text(package_name, 'aerosol_temp.html') as file:
     filedata = file.read()
     filedata = filedata.replace('F20TR_v2_ndg_ERA5_SEdata_NA_RRM', f'{case2}_{region}')
@@ -75,9 +76,11 @@ itemDict = {
 
 for item in diags.split(','):
     item = item.strip()
-    tmp = 'asediag.batch_script'
+    tmp = 'src.batch_script'
     # Copying the template batch file for each diagnostic item
-    shutil.copy(pkg_resources.path(tmp, 'get_sediag.sh'), path / f'get_sediag_{item}.sh')
+    dst = path / f'get_sediag_{item}.sh'
+    with pkg_resources.path(tmp, 'get_sediag.sh') as src:
+        shutil.copy(src, dst)
     
     # Replacing template placeholders with actual info from config
     with open(path / f'get_sediag_{item}.sh', 'r') as file:

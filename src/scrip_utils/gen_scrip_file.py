@@ -3,10 +3,10 @@ from pathlib import Path
 import xarray as xr
 import logging
 
-from asediag.get_face_area import calculate_face_area_quadrature_method
-from asediag.gen_rll_grid import gen_RLL
-from asediag.gen_phys_grids import gen_pg
-from asediag.asediag_utils import get_dir_path
+from src.scrip_utils.get_face_area import calculate_face_area_quadrature_method
+from src.scrip_utils.gen_rll_grid import gen_RLL
+from src.scrip_utils.gen_phys_grids import gen_pg
+from src.utils.asediag_utils import get_dir_path
 
 class gen_scrip(object):
     """
